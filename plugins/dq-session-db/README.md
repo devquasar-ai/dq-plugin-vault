@@ -67,7 +67,9 @@ grep the transcripts, query the database by hand, or look in the wrong place. Ca
 Every "find the session about X" is itself a new session that mentions X, so quick lookups and
 small tests pile up and crowd the results. session-db handles this three ways:
 
-- **The current session is never in its own results.**
+- **The current session is never in its own results**, and **lookup sessions** (ones that only
+  used session-db to search, and wrote nothing) are left out of search results too, with a note
+  saying how many were skipped. `--include-lookups` brings them back.
 - **Cleanup candidates** are sessions quiet for a day that wrote no files and made no commits,
   and are small: either a lookup (used session-db, 6 or fewer of your messages) or tiny (3 or
   fewer of your messages and under ~3,000 characters in total). Thresholds are in

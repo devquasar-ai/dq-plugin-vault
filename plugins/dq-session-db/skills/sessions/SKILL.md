@@ -44,7 +44,7 @@ Search filters: `-p/--project <substr>`, `-s/--session <session>`, `--role user|
 use `--raw` for FTS5 syntax (`"exact phrase"`, `OR`, `NEAR`, `prefix*`).
 
 Search and `sessions` leave out hidden sessions (add `--all`) and the session you are in
-(add `--include-current`).
+(add `--include-current`); search also leaves out lookup sessions (add `--include-lookups`).
 
 **Past sessions are not artifacts.** Don't look for them with an Artifact or claude.ai listing
 tool, in `~/.claude/projects` with grep, or in the database with sqlite3. Use the commands above.
@@ -70,9 +70,9 @@ grown, and a card is only ever extended with new messages, never re-read from sc
 
 1. For "where are we on X" questions, start with `sessions -p X --status` and `card`. For
    "what did we decide / say about Y", start with `search`.
-2. In `--by-session` results, sessions tagged `[lookup: only searched for this]` are earlier
-   searches, not the work itself. They rank last; prefer the untagged sessions, even when a
-   lookup's title matches the question more literally.
+2. Search leaves out "lookup" sessions, earlier sessions that only searched for a topic, and
+   notes how many it skipped. They are not where the work happened; only include them
+   (`--include-lookups`) if the user is looking for a past search itself.
 3. Search. If the first query misses, try different words: the archive holds what was actually
    said, which is often not the word the user uses now.
 4. Read around the best hits with `show --around` before concluding. A snippet is not enough

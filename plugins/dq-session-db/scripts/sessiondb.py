@@ -583,6 +583,7 @@ def cmd_search(db, args):
         sys.exit(f"Bad query {q!r}: {e}. Use --raw for FTS5 syntax, or plain words.")
     if not rows:
         print("No matches.")
+        hidden_lookup_note(db, q, args)
         return
     if args.by_session:
         seen = {}
@@ -599,11 +600,13 @@ def cmd_search(db, args):
             tag = "  [lookup: only searched for this]" if lookup[sid] else ""
             print(f"{sid}  {label(r)}  [{r['project'] or '?'}]  {len(hits)} hit(s), "
                   f"latest {day(max(h['ts'] or '' for h in hits))}{tag}")
+        hidden_lookup_note(db, q, args)
         return
     for r in rows:
         snip = " ".join(r["snip"].split())
         print(f"#{r['id']}  {day(r['ts'])}  {r['session_id'][:8]}  {label(r)}  [{r['project'] or '?'}]  {r['role']}")
         print(f"    {snip}")
+    hidden_lookup_note(db, q, args)
     print("\nRead around a hit: sessiondb.py show <session> --around <#id>")
 
 
@@ -630,6 +633,26 @@ def search_cards(db, q, args):
     print("\nFull card: sessiondb.py card <session>")
 
 
+# Sessions that searched with session-db and produced nothing: they mention what they looked
+# for, but they are not about it. Left out of search results unless asked for.
+LOOKUP_ONLY_SQL = """NOT (EXISTS (SELECT 1 FROM touches t WHERE t.session_id = {a}.session_id
+                                 AND t.kind = 'lookup')
+         AND NOT EXISTS (SELECT 1 FROM touches t WHERE t.session_id = {a}.session_id
+                                 AND t.kind IN ('file', 'git')))"""
+
+
+def hidden_lookup_note(db, q, args):
+    if getattr(args, "include_lookups", False):
+        return
+    n = db.execute(
+        f"""SELECT COUNT(DISTINCT m.session_id) FROM messages_fts
+            JOIN messages m ON m.id = messages_fts.rowid
+            JOIN sessions s ON s.session_id = m.session_id
+            WHERE messages_fts MATCH ? AND NOT {LOOKUP_ONLY_SQL.format(a='s')}""", (q,)).fetchone()[0]
+    if n:
+        print(f"({n} lookup session(s) that only searched for this not shown; add --include-lookups)")
+
+
 def lookup_only(db, sid):
     """True for a session that used session-db and produced nothing (no files, no commits)."""
     kinds = {r[0] for r in db.execute("SELECT DISTINCT kind FROM touches WHERE session_id=?", (sid,))}
@@ -641,6 +664,8 @@ def visibility(where, params, args, alias):
     where, params = list(where), list(params)
     if not getattr(args, "all", False):
         where.append(f"coalesce({alias}.hidden, 0) = 0")
+    if not getattr(args, "include_lookups", False):
+        where.append(LOOKUP_ONLY_SQL.format(a=alias))
     current = os.environ.get("CLAUDE_CODE_SESSION_ID")
     if current and not getattr(args, "include_current", False):
         where.append(f"{alias}.session_id != ?")
@@ -1157,6 +1182,8 @@ def main():
     p.add_argument("--all", action="store_true", help="include hidden sessions")
     p.add_argument("--include-current", action="store_true",
                    help="include the session doing the searching")
+    p.add_argument("--include-lookups", action="store_true",
+                   help="include sessions that only searched for this")
     p.add_argument("--cards", action="store_true", help="search summary cards instead of messages")
 
     p = sub.add_parser("sessions", help="list sessions, most recent first")
