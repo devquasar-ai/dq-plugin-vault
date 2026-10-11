@@ -46,12 +46,12 @@ there is no built-in voice and no Dictation, so it takes more setup.
 - **Other operating systems**, Windows included: built-in voices and voice typing exist there
   too, they just need someone to wire them up and test them
 
-Issues and pull requests: [devquasar-ai/skills](https://github.com/devquasar-ai/skills).
+Issues and pull requests: [devquasar-ai/dq-plugin-vault](https://github.com/devquasar-ai/dq-plugin-vault).
 
 ## Install
 
 ```
-/plugin marketplace add devquasar-ai/skills
+/plugin marketplace add devquasar-ai/dq-plugin-vault
 /plugin install dq-local-tts@devquasar
 ```
 

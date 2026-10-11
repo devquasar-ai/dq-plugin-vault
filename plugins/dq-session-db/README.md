@@ -15,7 +15,7 @@ every transcript**, so nothing is lost, and a deleted session can be put back an
 ## Install
 
 ```
-/plugin marketplace add devquasar-ai/skills
+/plugin marketplace add devquasar-ai/dq-plugin-vault
 /plugin install dq-session-db@devquasar
 ```
 

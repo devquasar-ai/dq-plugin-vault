@@ -1,6 +1,6 @@
-<p align="center"><img src="docs/logo/skills-circuit-256.png" width="140" alt="DevQuasar skills logo"></p>
+<p align="center"><img src="docs/logo/skills-circuit-256.png" width="140" alt="DQ Plugin Vault logo"></p>
 
-# DevQuasar skills
+# DQ Plugin Vault
 
 Free, local-first plugins for Claude Code, by [DevQuasar](https://devquasar.com).
 Everything here runs on your machine. DQ = DevQuasar.
@@ -8,7 +8,7 @@ Everything here runs on your machine. DQ = DevQuasar.
 ## Add the marketplace
 
 ```
-/plugin marketplace add devquasar-ai/skills
+/plugin marketplace add devquasar-ai/dq-plugin-vault
 ```
 
 Then install the plugins you want from `/plugin`, or with the install line on each plugin's page.

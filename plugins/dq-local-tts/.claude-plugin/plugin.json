@@ -7,8 +7,8 @@
     "name": "DevQuasar",
     "url": "https://devquasar.com"
   },
-  "homepage": "https://github.com/devquasar-ai/skills/tree/main/plugins/dq-local-tts",
-  "repository": "https://github.com/devquasar-ai/skills",
+  "homepage": "https://github.com/devquasar-ai/dq-plugin-vault/tree/main/plugins/dq-local-tts",
+  "repository": "https://github.com/devquasar-ai/dq-plugin-vault",
   "license": "MIT",
   "keywords": [
     "tts",
