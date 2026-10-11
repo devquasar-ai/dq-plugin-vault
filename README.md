@@ -3,7 +3,8 @@
 # DQ Plugin Vault
 
 Free, local-first plugins for Claude Code, by [DevQuasar](https://devquasar.com).
-Everything here runs on your machine. DQ = DevQuasar.
+Everything here runs on your machine. DQ = DevQuasar. Project page:
+[devquasar.com/dq-plugin-vault](https://devquasar.com/dq-plugin-vault/)
 
 ## Add the marketplace
 
