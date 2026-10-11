@@ -10,6 +10,8 @@ resume it. Optionally, keep a short summary card per session, written by a model
 default). session-db keeps a searchable index of every conversation **and a compressed copy of
 every transcript**, so nothing is lost, and a deleted session can be put back and resumed.
 
+![How dq-session-db works](../../docs/session-db.svg)
+
 ## Install
 
 ```

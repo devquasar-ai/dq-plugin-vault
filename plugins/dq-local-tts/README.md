@@ -2,124 +2,12 @@
 
 *DQ = [DevQuasar](https://devquasar.com).*
 
+![How dq-local-tts works](../../docs/local-tts.svg)
+
 A Claude Code plugin that reads Claude's replies out loud — with
 [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M), or with macOS's built-in
 `say` voices. Everything runs on your machine — no API key, and no network call
 when it speaks.
-
-## How it works
-
-Three stages, with a clear split of labour:
-
-```
- ┌─ this machine ──────────────────────────────────────────────┐
- │                                                             │
- │  PreToolUse ─┐   hook worker           daemon               │
- │  Stop ───────┴─► · new text this turn ─► · split sentences  │
- │  (detached,      · dedupe               · synth one ahead ──┼──► backend
- │   ~0.3 s)        · filter code/tables   · play the audio ◄──┼─── WAV bytes
- │                                                             │
- └─────────────────────────────────────────────────────────────┘
-   backend = embedded (Kokoro in the daemon)
-           | http     (kokoro-tts-server container on :42821)
-           | say      (macOS `say`)
-```
-
-**The hooks decide what to say. The daemon splits and plays. The backend only
-synthesizes.** Because a backend just turns text into WAV bytes, swapping it
-changes nothing about what is spoken or how it is played.
-
-Playback can never move into the container: on macOS Docker runs inside a Linux
-VM with no CoreAudio access and no `/dev/snd`, so a container physically cannot
-make sound. It hands back bytes.
-
-Three things make it usable turn after turn:
-
-**The hook never blocks.** It buffers the payload, hands it to a detached
-worker, and returns in ~0.3 s. A turn never waits on synthesis or playback.
-Text written before a tool call is spoken as that tool starts (`PreToolUse`),
-so a long, tool-heavy turn talks as it goes instead of all at the end.
-
-**Sentence streaming.** Kokoro emits nothing until it has synthesized a whole
-passage, so a long answer would mean a long silence. `split_chunks()` breaks
-text into sentence-sized pieces — a deliberately short one first — and requests
-chunk *N+1* while chunk *N* is still playing.
-
-**An aggressive filter.** Code, tables, diffs, tracebacks, HTML and shell
-transcripts are unlistenable. `strip_unspeakable()` drops them by *line* before
-any markdown stripping, and also drops a dangling lead-in ("Here is the diff:")
-whose content was just removed. Long paths collapse to their basename. So this:
-
-````markdown
-## Fixed
-The off-by-one was in `client.py`:
-```python
-for i in range(retries): backoff(i)
-```
-| file | change |
-|---|---|
-It now stops after **three** attempts.
-````
-
-is spoken as: *"Fixed. It now stops after three attempts."*
-
-Filtering and splitting live in the plugin rather than the server, so they work
-identically on every backend — including `embedded` and `say`, which have no
-server to ask.
-
-## Backends
-
-| Backend | Model runs | Setup | First audio | Notes |
-|---|---|---|---|---|
-| `embedded` | in the daemon | `./setup.sh` (~1.1 GB venv) | **0.2–0.8 s** | Fastest. Needs Python deps locally |
-| `http` | in a container, or any OpenAI-compatible service | `/dq-local-tts:tts server up` (1.9 GB image) | **~2.6 s** | No Python deps here. Docker on macOS is CPU-only — no Metal — hence slower |
-| `say` (default on macOS) | macOS's built-in `say` | nothing | **~0.5 s** | macOS only. Zero install; system voices instead of Kokoro's |
-
-```
-clean → split → [chunk 1] ─┐
-                [chunk 2] ─┼─► backend ──► WAV bytes ──► played on this machine
-                [chunk 3] ─┘
-```
-
-Chunks are requested one ahead of playback, so audio starts on chunk one on
-every backend.
-
-### What `/dq-local-tts:tts server up` does
-
-It is idempotent and says which of four situations it found — already
-serving, container stopped, image present, or nothing local at all. The last is
-the slow case and announces itself first:
-
-```
-FIRST-TIME SETUP: no local image found.
-Pulling ghcr.io/devquasar-ai/kokoro-tts-server:latest -- this is a multi-GB
-download and will take several minutes. It happens once; later starts are seconds.
-```
-
-A locally built image wins over the published one — if you built it, you meant
-it.
-
-**If the pull fails, it builds from source instead of giving up.** The whole
-build context ships inside the plugin at `server/` (32 KB), so an offline
-machine, a proxied network, or an unpublished architecture still gets a working
-server. Building is slower than pulling — it installs torch and bakes the model,
-a few minutes — but it needs no registry access at all. `/dq-local-tts:tts server build`
-forces that path deliberately.
-
-The server lives at [`server/`](server/) — Dockerfile, compose file, FastAPI
-app and its tests. It is the source of truth for the image: CI in this
-repository builds it and publishes to
-`ghcr.io/devquasar-ai/kokoro-tts-server`. It has no dependency on the plugin
-and can be run on its own with `docker compose up -d`.
-
-The plugin checks `/health` for `service` and `api_version`, so it can tell
-"server is down" from "server speaks a contract I don't understand". A server
-that isn't a `kokoro-tts-server` is allowed through and treated as a generic
-OpenAI `/v1/audio/speech` endpoint.
-
-The host port is **42821** — deliberately odd, since 8080 collides with almost
-everything, and below the macOS ephemeral range (49152+) so it can't clash with
-a transient bind. Override with `KOKORO_TTS_PORT`.
 
 ## Install
 
@@ -234,6 +122,121 @@ shows the plugin version and flags a daemon started from another version as
 | `say_voice` | `""` | macOS voice for the `say` backend; empty = system default |
 | `server_url` | `http://localhost:42821` | Used by the `http` backend |
 | `request_timeout` | `120` | Seconds to wait on the `http` backend |
+
+## How it works
+
+Three stages, with a clear split of labour:
+
+```
+ ┌─ this machine ──────────────────────────────────────────────┐
+ │                                                             │
+ │  PreToolUse ─┐   hook worker           daemon               │
+ │  Stop ───────┴─► · new text this turn ─► · split sentences  │
+ │  (detached,      · dedupe               · synth one ahead ──┼──► backend
+ │   ~0.3 s)        · filter code/tables   · play the audio ◄──┼─── WAV bytes
+ │                                                             │
+ └─────────────────────────────────────────────────────────────┘
+   backend = embedded (Kokoro in the daemon)
+           | http     (kokoro-tts-server container on :42821)
+           | say      (macOS `say`)
+```
+
+**The hooks decide what to say. The daemon splits and plays. The backend only
+synthesizes.** Because a backend just turns text into WAV bytes, swapping it
+changes nothing about what is spoken or how it is played.
+
+Playback can never move into the container: on macOS Docker runs inside a Linux
+VM with no CoreAudio access and no `/dev/snd`, so a container physically cannot
+make sound. It hands back bytes.
+
+Three things make it usable turn after turn:
+
+**The hook never blocks.** It buffers the payload, hands it to a detached
+worker, and returns in ~0.3 s. A turn never waits on synthesis or playback.
+Text written before a tool call is spoken as that tool starts (`PreToolUse`),
+so a long, tool-heavy turn talks as it goes instead of all at the end.
+
+**Sentence streaming.** Kokoro emits nothing until it has synthesized a whole
+passage, so a long answer would mean a long silence. `split_chunks()` breaks
+text into sentence-sized pieces — a deliberately short one first — and requests
+chunk *N+1* while chunk *N* is still playing.
+
+**An aggressive filter.** Code, tables, diffs, tracebacks, HTML and shell
+transcripts are unlistenable. `strip_unspeakable()` drops them by *line* before
+any markdown stripping, and also drops a dangling lead-in ("Here is the diff:")
+whose content was just removed. Long paths collapse to their basename. So this:
+
+````markdown
+
+## Backends
+
+| Backend | Model runs | Setup | First audio | Notes |
+|---|---|---|---|---|
+| `embedded` | in the daemon | `./setup.sh` (~1.1 GB venv) | **0.2–0.8 s** | Fastest. Needs Python deps locally |
+| `http` | in a container, or any OpenAI-compatible service | `/dq-local-tts:tts server up` (1.9 GB image) | **~2.6 s** | No Python deps here. Docker on macOS is CPU-only — no Metal — hence slower |
+| `say` (default on macOS) | macOS's built-in `say` | nothing | **~0.5 s** | macOS only. Zero install; system voices instead of Kokoro's |
+
+```
+clean → split → [chunk 1] ─┐
+                [chunk 2] ─┼─► backend ──► WAV bytes ──► played on this machine
+                [chunk 3] ─┘
+```
+
+Chunks are requested one ahead of playback, so audio starts on chunk one on
+every backend.
+
+### What `/dq-local-tts:tts server up` does
+
+It is idempotent and says which of four situations it found — already
+serving, container stopped, image present, or nothing local at all. The last is
+the slow case and announces itself first:
+
+```
+FIRST-TIME SETUP: no local image found.
+Pulling ghcr.io/devquasar-ai/kokoro-tts-server:latest -- this is a multi-GB
+download and will take several minutes. It happens once; later starts are seconds.
+```
+
+A locally built image wins over the published one — if you built it, you meant
+it.
+
+**If the pull fails, it builds from source instead of giving up.** The whole
+build context ships inside the plugin at `server/` (32 KB), so an offline
+machine, a proxied network, or an unpublished architecture still gets a working
+server. Building is slower than pulling — it installs torch and bakes the model,
+a few minutes — but it needs no registry access at all. `/dq-local-tts:tts server build`
+forces that path deliberately.
+
+The server lives at [`server/`](server/) — Dockerfile, compose file, FastAPI
+app and its tests. It is the source of truth for the image: CI in this
+repository builds it and publishes to
+`ghcr.io/devquasar-ai/kokoro-tts-server`. It has no dependency on the plugin
+and can be run on its own with `docker compose up -d`.
+
+The plugin checks `/health` for `service` and `api_version`, so it can tell
+"server is down" from "server speaks a contract I don't understand". A server
+that isn't a `kokoro-tts-server` is allowed through and treated as a generic
+OpenAI `/v1/audio/speech` endpoint.
+
+The host port is **42821** — deliberately odd, since 8080 collides with almost
+everything, and below the macOS ephemeral range (49152+) so it can't clash with
+a transient bind. Override with `KOKORO_TTS_PORT`.
+
+## Fixed
+The off-by-one was in `client.py`:
+```python
+for i in range(retries): backoff(i)
+```
+| file | change |
+|---|---|
+It now stops after **three** attempts.
+````
+
+is spoken as: *"Fixed. It now stops after three attempts."*
+
+Filtering and splitting live in the plugin rather than the server, so they work
+identically on every backend — including `embedded` and `say`, which have no
+server to ask.
 
 ## Notes
 
