@@ -9,6 +9,29 @@ A Claude Code plugin that reads Claude's replies out loud — with
 `say` voices. Everything runs on your machine — no API key, and no network call
 when it speaks.
 
+## Why I built it
+
+Talking to an agent is faster and more natural than typing to it. You explain a problem the way
+you would to a colleague, with the context and the half-formed ideas that never make it into a
+typed prompt. But the conversation only went one way: I could speak to Claude, and then I had
+to stop and read every reply.
+
+dq-local-tts closes the loop. Claude's replies are spoken as they arrive, so I can keep my eyes
+on the code, the diagram or the hardware in front of me, and work with the agent the way I'd
+work with a person next to me.
+
+**The other half is already on your Mac: Dictation.** macOS has built-in speech-to-text that
+works in any app, including the terminal where Claude Code runs:
+
+1. Turn it on in **System Settings → Keyboard → Dictation**.
+2. Press the dictation shortcut (the 🎤 key, or press **Control** twice, depending on your
+   keyboard and settings), speak your prompt, and press Return.
+
+On Apple silicon, Dictation runs on the device for supported languages. Together with
+dq-local-tts speaking through the macOS voices or a local Kokoro model, the whole conversation
+stays on your machine: you talk, Claude works, Claude talks back. Nothing to build for the
+listening side: it was there all along.
+
 ## Install
 
 ```
