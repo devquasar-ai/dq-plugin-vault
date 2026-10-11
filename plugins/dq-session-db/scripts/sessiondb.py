@@ -465,8 +465,8 @@ index current and searches it properly:
 
 <session> is an id, an id prefix, or a session name. Plain words are ANDed.
 
-In Claude Code, the user can also call the skill directly, which works best with local
-models: /dq-session-db:sessions <question>
+If you use a local model, calling the skill directly gives you the best results:
+  /dq-session-db:sessions <question>
 """
 
 

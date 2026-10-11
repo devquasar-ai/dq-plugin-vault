@@ -49,15 +49,18 @@ sessiondb.py restore billing-refactor                  # bring back a deleted tr
 
 A session can be named by its id, the start of its id, or its name (`/rename`) or title.
 
-### With local models
+### If you use a local model
 
-Claude picks up the `sessions` skill on its own. Smaller local models (run through Claude Code
-with a local endpoint) often don't: they grep transcripts, query the database by hand, or look
-in the wrong place. Call the skill explicitly and it works the same:
+**If you run Claude Code with a local model, call the skill directly: it gives you the best
+results.**
 
 ```
 /dq-session-db:sessions find the session about the billing refactor
 ```
+
+Claude picks up the skill on its own when you just ask. Smaller local models often don't: they
+grep the transcripts, query the database by hand, or look in the wrong place. Calling
+`/dq-session-db:sessions` hands them the instructions directly.
 
 ## Keeping it tidy
 
