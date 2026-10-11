@@ -2,13 +2,15 @@
 
 *DQ = [DevQuasar](https://devquasar.com).*
 
-**Your Claude Code history, kept and searchable.** Find what was said or decided in any past
-session, read around it, see which files and commits it touched, and get the exact command to
-resume it. Optionally, keep a short summary card per session, written by a model you choose.
+**Your Claude Code conversations, owned by you.** Every session with an agent is a record of
+decisions, dead ends and the reasoning behind your code. dq-session-db keeps that record on your
+machine: searchable, always there, in plain files you control. Ask Claude what was said or
+decided in any past session, see which files and commits it touched, and get the exact command to
+resume it. Optionally, keep a short summary card per session, written by a model you choose,
+local or cloud.
 
-**Why:** Claude Code deletes session transcripts after `cleanupPeriodDays` (30 days by
-default). session-db keeps a searchable index of every conversation **and a compressed copy of
-every transcript**, so nothing is lost, and a deleted session can be put back and resumed.
+It's a SQLite database and gzip-compressed copies of your transcripts, in one folder. No
+service, no account, no lock-in: back it up, move it, or query it with any SQLite tool.
 
 ![How dq-session-db works](../../docs/session-db.svg)
 
@@ -94,7 +96,8 @@ again. `sessions --all` and `search --all` include hidden sessions.
 ## Your history, kept
 
 Every transcript gets a compressed copy in `~/.local/share/session-db/transcripts/`, kept up to date
-as the session grows. If Claude Code has deleted the original, `restore <session>` writes it
+as the session grows. Claude Code cleans up old transcripts on its own schedule (the
+`cleanupPeriodDays` setting); your copies stay. If Claude Code has deleted the original, `restore <session>` writes it
 back byte-for-byte, and `claude --resume` works again. `stats` shows how many sessions now exist
 only in the archive.
 

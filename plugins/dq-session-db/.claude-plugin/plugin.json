@@ -1,8 +1,8 @@
 {
   "name": "dq-session-db",
   "displayName": "DQ Session DB",
-  "description": "Your Claude Code history, kept and searchable: find what was said or decided in any past session, see what it touched, and resume it, even after Claude Code has deleted the transcript.",
-  "version": "0.6.1",
+  "description": "Your Claude Code conversations, owned by you: a local, searchable archive of every session. Ask about past work, see what it touched, and resume any session. Works with local models.",
+  "version": "0.6.2",
   "author": {
     "name": "DevQuasar",
     "url": "https://devquasar.com"

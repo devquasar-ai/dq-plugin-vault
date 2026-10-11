@@ -18,7 +18,7 @@ Then install the plugins you want from `/plugin`, or with the install line on ea
 
 | Plugin | What it does |
 |---|---|
-| [dq-session-db](plugins/dq-session-db/) | Your Claude Code history, kept and searchable: ask about past sessions, resume them, even after Claude Code deletes them. |
+| [dq-session-db](plugins/dq-session-db/) | Your Claude Code conversations, owned by you: a local, searchable archive of every session. Ask about past work and resume any session; works with local models. |
 | [dq-local-tts](plugins/dq-local-tts/) | Hear Claude's replies, spoken on your machine: macOS voices out of the box, Kokoro on any OS. With macOS Dictation, a full voice conversation that stays local. |
 
 ## Notes
