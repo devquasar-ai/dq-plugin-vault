@@ -8,7 +8,7 @@ allowed-tools:
 # /sessions — search and resume past sessions
 
 Every Claude Code session on this machine is indexed into a SQLite full-text archive at
-`~/.claude/session-db/sessions.db`. The archive keeps its own copy of the conversation text, so
+`~/.local/share/session-db/sessions.db` (outside Claude Code's own folder). The archive keeps its own copy of the conversation text, so
 sessions stay searchable after Claude Code deletes old transcripts (`cleanupPeriodDays`, 30 by
 default). Hooks index new messages at session start and end, and every command catches up
 before it answers.

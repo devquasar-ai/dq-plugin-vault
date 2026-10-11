@@ -144,6 +144,29 @@ class SessionDbTest(unittest.TestCase):
         self.assertEqual(con.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()[0], "99")
         con.close()
 
+    def test_legacy_archive_moves_out_of_claude_folder(self):
+        home = os.path.join(self.tmp.name, "home")
+        legacy = os.path.join(home, ".claude", "session-db")
+        os.makedirs(legacy)
+        self.write(event("user", 1, "legacy narwhal"))
+        old_env = {**self.env, "SESSION_DB": os.path.join(legacy, "sessions.db")}
+        subprocess.run([sys.executable, SCRIPT, "index", "-q"], env=old_env, check=True)
+        with open(os.path.join(legacy, "config.json"), "w") as f:
+            f.write("{}")
+        env = {k: v for k, v in self.env.items() if k != "SESSION_DB"}
+        env.update(HOME=home, XDG_DATA_HOME="")
+        r = subprocess.run([sys.executable, SCRIPT, "search", "narwhal"], env=env,
+                           capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("legacy [narwhal]", r.stdout)
+        self.assertIn("moved the archive", r.stderr)
+        new = os.path.join(home, ".local", "share", "session-db")
+        self.assertTrue(os.path.exists(os.path.join(new, "sessions.db")))
+        self.assertTrue(os.path.exists(os.path.join(new, "config.json")))
+        self.assertTrue(os.path.isdir(legacy + ".migrated"))
+        self.assertFalse(os.path.exists(legacy))
+        self.assertEqual(os.stat(new).st_mode & 0o777, 0o700)
+
     def test_cards_off_by_default(self):
         self.write(event("user", 1, "hello"))
         self.assertIn("Session cards are OFF", self.run_cli("cards-ctl", "status"))

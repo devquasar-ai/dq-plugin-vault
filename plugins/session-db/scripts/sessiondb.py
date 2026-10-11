@@ -12,6 +12,7 @@ so each file is read from the byte offset where the last run stopped.
 
 import argparse
 import fcntl
+import shutil
 import gzip
 import json
 import os
@@ -27,9 +28,12 @@ import cards  # noqa: E402
 
 HOME = os.path.expanduser("~")
 DEFAULT_SOURCE = os.environ.get("SESSION_DB_SOURCE", os.path.join(HOME, ".claude", "projects"))
-DEFAULT_DB = os.environ.get(
-    "SESSION_DB", os.path.join(HOME, ".claude", "session-db", "sessions.db")
-)
+# Our data lives outside ~/.claude on purpose: that folder belongs to Claude Code, which
+# cleans it up and may reset it; the archive exists to outlive exactly that.
+DATA_HOME = os.environ.get("SESSION_DB_HOME") or os.path.join(
+    os.environ.get("XDG_DATA_HOME") or os.path.join(HOME, ".local", "share"), "session-db")
+DEFAULT_DB = os.environ.get("SESSION_DB", os.path.join(DATA_HOME, "sessions.db"))
+LEGACY_HOME = os.path.join(HOME, ".claude", "session-db")  # used by versions before 0.4
 MAX_TEXT = 20000  # per message; long pastes are truncated, not dropped
 SCHEMA_VERSION = 3
 
@@ -75,6 +79,49 @@ def guard_and_backup(path):
             src.close()
             dst.close()
         os.chmod(backup, 0o600)
+
+
+def migrate_legacy_home(db_path):
+    """Move a pre-0.4 archive out of ~/.claude into DATA_HOME, once.
+
+    Copy, verify, then rename the old folder instead of deleting it, so nothing is lost if
+    anything goes wrong. Only for the default location: an explicit --db/SESSION_DB is
+    the user's choice.
+    """
+    legacy_db = os.path.join(LEGACY_HOME, "sessions.db")
+    if db_path != os.path.join(DATA_HOME, "sessions.db") or os.path.exists(db_path) \
+            or not os.path.exists(legacy_db):
+        return
+    os.makedirs(DATA_HOME, mode=0o700, exist_ok=True)
+    os.chmod(DATA_HOME, 0o700)
+    with open(os.path.join(LEGACY_HOME, "sessions.db.lock"), "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)  # no indexer may write mid-copy
+        tmp = db_path + ".moving"
+        src, dst = sqlite3.connect(legacy_db, timeout=30), sqlite3.connect(tmp)
+        try:
+            src.backup(dst)
+            n_old = src.execute("SELECT COUNT(*) FROM messages").fetchone()[0]
+            n_new = dst.execute("SELECT COUNT(*) FROM messages").fetchone()[0]
+        finally:
+            src.close()
+            dst.close()
+        if n_old != n_new:
+            os.remove(tmp)
+            sys.exit(f"Moving the archive to {DATA_HOME} failed verification; nothing changed.")
+        for name in os.listdir(LEGACY_HOME):
+            if name.startswith("sessions.db"):
+                continue  # the database is copied above; WAL, locks and backups stay behind
+            src_path = os.path.join(LEGACY_HOME, name)
+            if os.path.isdir(src_path):
+                shutil.copytree(src_path, os.path.join(DATA_HOME, name), dirs_exist_ok=True)
+            else:
+                shutil.copy2(src_path, os.path.join(DATA_HOME, name))
+        os.chmod(tmp, 0o600)
+        os.replace(tmp, db_path)
+    os.rename(LEGACY_HOME, LEGACY_HOME + ".migrated")
+    print(f"session-db: moved the archive from {LEGACY_HOME} to {DATA_HOME} (outside Claude "
+          f"Code's folder). The old copy is kept at {LEGACY_HOME}.migrated; delete it when "
+          f"you're happy.", file=sys.stderr)
 
 
 def connect(path):
@@ -798,6 +845,8 @@ def cmd_stats(db, args):
     print(f"compressed transcripts: {n_arch} files, {asize // 2**20} MB in {adir}"
           + ("  (restore with: restore <session>)" if gone else ""))
     print(f"db: {args.db} ({os.path.getsize(args.db) // 2**20} MB)")
+    if os.path.isdir(LEGACY_HOME + ".migrated"):
+        print(f"old pre-0.4 copy still at {LEGACY_HOME}.migrated (safe to delete once you're happy)")
     print("\nTop projects:")
     for r in db.execute("""SELECT project, COUNT(*) n, MAX(updated) u FROM sessions
                            GROUP BY project ORDER BY u DESC LIMIT 15"""):
@@ -938,6 +987,7 @@ def main():
     p.add_argument("--no-test", action="store_true")
 
     args = ap.parse_args()
+    migrate_legacy_home(args.db)
     db = connect(args.db)
     if args.cmd in READ_COMMANDS:
         # Catch up before answering: a no-change run only stats each transcript,

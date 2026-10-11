@@ -49,7 +49,7 @@ A session can be named by its id, the start of its id, or its name (`/rename`) o
 
 ## Your history, kept
 
-Every transcript gets a compressed copy in `~/.claude/session-db/transcripts/`, kept up to date
+Every transcript gets a compressed copy in `~/.local/share/session-db/transcripts/`, kept up to date
 as the session grows. If Claude Code has deleted the original, `restore <session>` writes it
 back byte-for-byte, and `claude --resume` works again. `stats` shows how many sessions now exist
 only in the archive.
@@ -91,7 +91,7 @@ Examples:
 /session-db:cards local '${MY_LLM_URL}/v1' my-model MY_LLM_KEY  # ${VAR} expands at call time
 ```
 
-The config lives next to the database (`~/.claude/session-db/config.json`). From a shell, the
+The config lives next to the database (`~/.local/share/session-db/config.json`). From a shell, the
 same verbs work as `scripts/cards-ctl.sh <verb>`.
 
 **When cards are made.** In the background, from the session hooks, for a session that has
@@ -115,8 +115,15 @@ the overhead per call is a few hundred tokens.
 
 ## Upgrading
 
-Your data lives in `~/.claude/session-db/`, outside the plugin, so uninstalling or updating the
-plugin never touches it. When a new version changes the database format, it upgrades it in
+Your data lives in `~/.local/share/session-db/` (or `$XDG_DATA_HOME/session-db`; set
+`SESSION_DB_HOME` to put it anywhere else, e.g. a backed-up disk). That's outside the plugin, so
+uninstalling or updating it never touches your data, and outside `~/.claude`, which belongs to
+Claude Code: it cleans that folder up and a reset or reinstall may wipe it, which is exactly
+what this archive has to survive.
+
+Versions before 0.4 kept the archive in `~/.claude/session-db/`. The first run of 0.4 copies it
+to the new place, verifies the copy, and renames the old folder to
+`~/.claude/session-db.migrated` (delete it when you're happy). When a new version changes the database format, it upgrades it in
 place on first use, after saving a backup next to it (`sessions.db.pre-vN.bak`). An older version
 refuses to open a database written by a newer one, instead of damaging it. Run only one copy
 of session-db at a time: two installs from different marketplaces would write to the same
@@ -146,7 +153,7 @@ archive.
 - **Resume:** records the directory each session started in, because `claude --resume` only
   finds a session from there.
 
-Database: `~/.claude/session-db/sessions.db` (override with `SESSION_DB` or `--db`).
+Database: `~/.local/share/session-db/sessions.db` (override the folder with `SESSION_DB_HOME`, or the file with `SESSION_DB` / `--db`).
 
 | Table | Holds |
 |---|---|
