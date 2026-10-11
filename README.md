@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/logo/skills-circuit-256.png" width="140" alt="DevQuasar skills logo"></p>
+
 # DevQuasar skills
 
 Free, local-first plugins for Claude Code, by [DevQuasar](https://devquasar.com).
