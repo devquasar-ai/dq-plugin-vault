@@ -101,7 +101,7 @@ backend when you want the lowest latency on one machine.
 ## Tests
 
 ```sh
-cd plugins/local-tts/server && python3 -m pytest tests/ -q
+cd plugins/dq-local-tts/server && python3 -m pytest tests/ -q
 ```
 
 The text engine has no model dependency, which is what makes it worth testing.

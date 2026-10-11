@@ -1,4 +1,6 @@
-# session-db
+# dq-session-db
+
+*DQ = [DevQuasar](https://devquasar.com).*
 
 **Your Claude Code history, kept and searchable.** Find what was said or decided in any past
 session, read around it, see which files and commits it touched, and get the exact command to
@@ -12,7 +14,7 @@ every transcript**, so nothing is lost, and a deleted session can be put back an
 
 ```
 /plugin marketplace add devquasar-ai/skills
-/plugin install session-db@devquasar
+/plugin install dq-session-db@devquasar
 ```
 
 That's all. The first command you run (or the next session start) builds the archive, and
@@ -64,31 +66,31 @@ outcomes, open threads and key facts. Every item cites the message `#id` it came
 can be checked with `show --around`. Cards are searchable too (`search --cards`).
 
 **Cards are off by default.** Summarizing needs a language model, and which one (and who pays
-for it) is your call. Turn them on from Claude Code with `/session-db:cards`:
+for it) is your call. Turn them on from Claude Code with `/dq-session-db:cards`:
 
 ```
-/session-db:cards                       status: model, auto on/off, cards made, sessions due
-/session-db:cards haiku                 headless `claude -p` on your own Claude Code login
-/session-db:cards claude sonnet         ... with another Claude model
-/session-db:cards local URL MODEL [KEY_ENV]   any OpenAI-compatible endpoint: Ollama, vLLM,
+/dq-session-db:cards                       status: model, auto on/off, cards made, sessions due
+/dq-session-db:cards haiku                 headless `claude -p` on your own Claude Code login
+/dq-session-db:cards claude sonnet         ... with another Claude model
+/dq-session-db:cards local URL MODEL [KEY_ENV]   any OpenAI-compatible endpoint: Ollama, vLLM,
                                         LM Studio, OpenAI, OpenRouter, ... (`openai` is an alias)
-/session-db:cards model NAME            change the model, keep the provider
-/session-db:cards url URL               change the endpoint
-/session-db:cards key-env VAR           read the API key from an environment variable
-/session-db:cards key KEY               store the API key in config.json (kept at 0600)
-/session-db:cards thinking on|off       thinking switch for vLLM/Qwen-style servers
-/session-db:cards on | off              automatic cards on/off
-/session-db:cards test                  one call to the model
-/session-db:cards now [SESSION]         make cards now: one session, or every due one
-/session-db:cards disable               no cards at all; existing cards are kept
+/dq-session-db:cards model NAME            change the model, keep the provider
+/dq-session-db:cards url URL               change the endpoint
+/dq-session-db:cards key-env VAR           read the API key from an environment variable
+/dq-session-db:cards key KEY               store the API key in config.json (kept at 0600)
+/dq-session-db:cards thinking on|off       thinking switch for vLLM/Qwen-style servers
+/dq-session-db:cards on | off              automatic cards on/off
+/dq-session-db:cards test                  one call to the model
+/dq-session-db:cards now [SESSION]         make cards now: one session, or every due one
+/dq-session-db:cards disable               no cards at all; existing cards are kept
 ```
 
 Examples:
 
 ```
-/session-db:cards haiku                                       # simplest, uses your Claude plan
-/session-db:cards local http://localhost:11434/v1 qwen3:8b    # Ollama, fully local
-/session-db:cards local '${MY_LLM_URL}/v1' my-model MY_LLM_KEY  # ${VAR} expands at call time
+/dq-session-db:cards haiku                                       # simplest, uses your Claude plan
+/dq-session-db:cards local http://localhost:11434/v1 qwen3:8b    # Ollama, fully local
+/dq-session-db:cards local '${MY_LLM_URL}/v1' my-model MY_LLM_KEY  # ${VAR} expands at call time
 ```
 
 The config lives next to the database (`~/.local/share/session-db/config.json`). From a shell, the

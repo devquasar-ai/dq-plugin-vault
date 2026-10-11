@@ -47,8 +47,8 @@ use `--raw` for FTS5 syntax (`"exact phrase"`, `OR`, `NEAR`, `prefix*`).
 
 Cards are off until the user turns them on; everything else works without them. Never change
 the card setup yourself: the user picks the model and pays for it. If they ask how, point them
-to `/session-db:cards` (no arguments shows the status), e.g. `/session-db:cards haiku`,
-`/session-db:cards local URL MODEL [KEY_ENV]`, `/session-db:cards on|off`.
+to `/dq-session-db:cards` (no arguments shows the status), e.g. `/dq-session-db:cards haiku`,
+`/dq-session-db:cards local URL MODEL [KEY_ENV]`, `/dq-session-db:cards on|off`.
 
 Once on, cards update in the background when a session has been quiet for 30 minutes and has
 grown, and a card is only ever extended with new messages, never re-read from scratch.

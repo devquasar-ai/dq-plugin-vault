@@ -1,6 +1,6 @@
 """End-to-end tests for sessiondb.py: run the CLI against throwaway transcripts.
 
-python3 -m unittest discover -s plugins/session-db/tests
+python3 -m unittest discover -s plugins/dq-session-db/tests
 """
 import gzip
 import json

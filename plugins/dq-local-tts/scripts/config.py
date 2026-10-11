@@ -104,7 +104,7 @@ def main():
     cfg = ttslib.load_config()
     ping = speak.request({"cmd": "ping"}, autostart=False)
     version = ttslib.plugin_version()
-    print(f"  plugin   : local-tts {version}")
+    print(f"  plugin   : dq-local-tts {version}")
     print(f"  speaking : {'on' if cfg['enabled'] else 'off'}")
     if cfg["backend"] == "say":
         print(f"  voice    : {cfg['say_voice'] or 'system default'} (macOS, speed {cfg['speed']}x)")
@@ -118,7 +118,7 @@ def main():
         running = ping.get("version", "pre-0.3.3")
         if running != version:
             # Plugin updates don't touch a daemon that is already running.
-            print(f"             STALE - daemon runs {running}; apply {version} with: /local-tts:tts restart")
+            print(f"             STALE - daemon runs {running}; apply {version} with: /dq-local-tts:tts restart")
     else:
         print("  daemon   : not running (starts on the next reply)")
     print(f"  backend  : {cfg['backend']}")

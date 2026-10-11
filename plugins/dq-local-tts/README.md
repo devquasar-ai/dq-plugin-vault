@@ -1,4 +1,6 @@
-# local-tts
+# dq-local-tts
+
+*DQ = [DevQuasar](https://devquasar.com).*
 
 A Claude Code plugin that reads Claude's replies out loud — with
 [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M), or with macOS's built-in
@@ -70,7 +72,7 @@ server to ask.
 | Backend | Model runs | Setup | First audio | Notes |
 |---|---|---|---|---|
 | `embedded` | in the daemon | `./setup.sh` (~1.1 GB venv) | **0.2–0.8 s** | Fastest. Needs Python deps locally |
-| `http` | in a container, or any OpenAI-compatible service | `/local-tts:tts server up` (1.9 GB image) | **~2.6 s** | No Python deps here. Docker on macOS is CPU-only — no Metal — hence slower |
+| `http` | in a container, or any OpenAI-compatible service | `/dq-local-tts:tts server up` (1.9 GB image) | **~2.6 s** | No Python deps here. Docker on macOS is CPU-only — no Metal — hence slower |
 | `say` (default on macOS) | macOS's built-in `say` | nothing | **~0.5 s** | macOS only. Zero install; system voices instead of Kokoro's |
 
 ```
@@ -82,7 +84,7 @@ clean → split → [chunk 1] ─┐
 Chunks are requested one ahead of playback, so audio starts on chunk one on
 every backend.
 
-### What `/local-tts:tts server up` does
+### What `/dq-local-tts:tts server up` does
 
 It is idempotent and says which of four situations it found — already
 serving, container stopped, image present, or nothing local at all. The last is
@@ -101,7 +103,7 @@ it.
 build context ships inside the plugin at `server/` (32 KB), so an offline
 machine, a proxied network, or an unpublished architecture still gets a working
 server. Building is slower than pulling — it installs torch and bakes the model,
-a few minutes — but it needs no registry access at all. `/local-tts:tts server build`
+a few minutes — but it needs no registry access at all. `/dq-local-tts:tts server build`
 forces that path deliberately.
 
 The server lives at [`server/`](server/) — Dockerfile, compose file, FastAPI
@@ -123,19 +125,19 @@ a transient bind. Override with `KOKORO_TTS_PORT`.
 
 ```
 /plugin marketplace add devquasar-ai/skills
-/plugin install local-tts@devquasar
+/plugin install dq-local-tts@devquasar
 ```
 
 Or point at a local checkout with `/plugin marketplace add /path/to/this/repo`.
 
 **On a Mac it works right away**: the default backend is macOS's built-in `say`, which needs
 nothing installed. Better voices (Premium / Siri) can be downloaded in System Settings →
-Accessibility → Spoken Content, then picked with `/local-tts:tts voice NAME`.
+Accessibility → Spoken Content, then picked with `/dq-local-tts:tts voice NAME`.
 
 **For Kokoro's voices** (any OS; the only option on Linux), use the container (`http`, the
 default off macOS) or the embedded backend, both described below.
 
-Plugin commands are namespaced: `/local-tts:tts` and `/local-tts:speak`.
+Plugin commands are namespaced: `/dq-local-tts:tts` and `/dq-local-tts:speak`.
 
 ### Container (no Python deps here)
 
@@ -143,24 +145,24 @@ Only Docker is required — the image is pulled if available, and built from the
 bundled `server/` source if not.
 
 ```sh
-/local-tts:tts server up          # pull-or-start the container, wait for /health
-/local-tts:tts backend http       # switch the plugin over (restarts the daemon)
-/local-tts:tts status             # confirm reachable and API-compatible
+/dq-local-tts:tts server up          # pull-or-start the container, wait for /health
+/dq-local-tts:tts backend http       # switch the plugin over (restarts the daemon)
+/dq-local-tts:tts status             # confirm reachable and API-compatible
 ```
 
 ### macOS `say` (nothing to install)
 
 Uses the system voices that ship with every Mac. `say` renders each chunk to a
-WAV, so filtering, chunking, `/local-tts:tts stop` and playback behave exactly as on the
+WAV, so filtering, chunking, `/dq-local-tts:tts stop` and playback behave exactly as on the
 other backends.
 
 ```sh
-/local-tts:tts backend say
-/local-tts:tts voice              # lists macOS voices, English first
-/local-tts:tts voice Samantha     # "" or unset = the system default voice
+/dq-local-tts:tts backend say
+/dq-local-tts:tts voice              # lists macOS voices, English first
+/dq-local-tts:tts voice Samantha     # "" or unset = the system default voice
 ```
 
-On this backend `/local-tts:tts voice` sets `say_voice`, leaving the Kokoro `voice`
+On this backend `/dq-local-tts:tts voice` sets `say_voice`, leaving the Kokoro `voice`
 untouched for when you switch back. Speed scales `say`'s rate from 175 wpm.
 More natural voices (Premium / Siri) can be downloaded in System Settings →
 Accessibility → Spoken Content.
@@ -172,7 +174,7 @@ Needs `espeak-ng` (Kokoro's phonemizer) and Python 3.9+.
 ```sh
 brew install espeak-ng          # or: sudo apt-get install espeak-ng
 ./setup.sh                      # venv + torch + model cache
-/local-tts:tts backend embedded
+/dq-local-tts:tts backend embedded
 ```
 
 `setup.sh` builds `~/.local/share/local-tts/venv` (~1.1 GB) outside the plugin
@@ -185,20 +187,20 @@ Speaking is on by default; it starts working after the next reply.
 
 | Command | Effect |
 |---|---|
-| `/local-tts:tts` | Status: plugin version, voice, speed, backend, daemon |
-| `/local-tts:tts off` / `/local-tts:tts on` | Stop / resume speaking replies |
-| `/local-tts:tts stop` | Cut off what is playing right now |
-| `/local-tts:tts voice` | List voices for the current backend |
-| `/local-tts:tts voice bm_george` | Switch voice (restarts the daemon); on `say`, a macOS voice |
-| `/local-tts:tts speed 1.15` | 0.5–2.0; ~1.15 is a good skim speed |
-| `/local-tts:tts backend` | Show the current backend and its settings |
-| `/local-tts:tts backend embedded\|http\|say` | Switch synthesis backend |
-| `/local-tts:tts server up\|down\|restart\|status\|logs\|rm` | Manage the TTS container |
-| `/local-tts:tts server pull` / `build` | Fetch the published image, or build the bundled source |
-| `/local-tts:tts restart` | Restart the daemon (picks up new plugin code) |
-| `/local-tts:tts start` / `shutdown` | Start and preload / stop the daemon |
-| `/local-tts:tts log` | Tail the daemon log |
-| `/local-tts:speak <text>` | Say something one-off |
+| `/dq-local-tts:tts` | Status: plugin version, voice, speed, backend, daemon |
+| `/dq-local-tts:tts off` / `/dq-local-tts:tts on` | Stop / resume speaking replies |
+| `/dq-local-tts:tts stop` | Cut off what is playing right now |
+| `/dq-local-tts:tts voice` | List voices for the current backend |
+| `/dq-local-tts:tts voice bm_george` | Switch voice (restarts the daemon); on `say`, a macOS voice |
+| `/dq-local-tts:tts speed 1.15` | 0.5–2.0; ~1.15 is a good skim speed |
+| `/dq-local-tts:tts backend` | Show the current backend and its settings |
+| `/dq-local-tts:tts backend embedded\|http\|say` | Switch synthesis backend |
+| `/dq-local-tts:tts server up\|down\|restart\|status\|logs\|rm` | Manage the TTS container |
+| `/dq-local-tts:tts server pull` / `build` | Fetch the published image, or build the bundled source |
+| `/dq-local-tts:tts restart` | Restart the daemon (picks up new plugin code) |
+| `/dq-local-tts:tts start` / `shutdown` | Start and preload / stop the daemon |
+| `/dq-local-tts:tts log` | Tail the daemon log |
+| `/dq-local-tts:speak <text>` | Say something one-off |
 
 `scripts/tts-ctl.sh` exposes the same surface from a shell and honours
 `LOCAL_TTS_HOME` if you want the runtime somewhere other than
@@ -209,10 +211,10 @@ Speaking is on by default; it starts working after the next reply.
 ```
 /plugin marketplace update devquasar       # or update it from /plugin
 /reload-plugins                            # or restart Claude Code
-/local-tts:tts restart                     # the daemon keeps running old code
+/dq-local-tts:tts restart                     # the daemon keeps running old code
 ```
 
-A running daemon is never touched by a plugin update. `/local-tts:tts status`
+A running daemon is never touched by a plugin update. `/dq-local-tts:tts status`
 shows the plugin version and flags a daemon started from another version as
 `STALE`, with the restart that fixes it. New hooks only load on
 `/reload-plugins` or a restart of Claude Code.
@@ -248,7 +250,7 @@ shows the plugin version and flags a daemon started from another version as
 - `SessionEnd` stops whatever is still playing.
 - The daemon **refuses to start** when it cannot synthesize — missing venv, or
   an unreachable/incompatible server. Accepting text and failing into an unread
-  log is a worse failure than never starting, so `/local-tts:tts status` names the cause.
+  log is a worse failure than never starting, so `/dq-local-tts:tts status` names the cause.
 - The daemon exits after three idle hours on any backend, and restarts on the
   next reply. On `embedded` that hands back the model's ~1 GB; on `http` and
   `say` there was never a model here to hand back.

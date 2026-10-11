@@ -1,11 +1,17 @@
 {
-  "name": "local-tts",
+  "name": "dq-local-tts",
   "description": "Speaks Claude Code's replies aloud, fully on your machine: macOS voices out of the box, or Kokoro. No cloud, no API key.",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "author": {
     "name": "DevQuasar",
     "url": "https://devquasar.com"
   },
   "license": "MIT",
-  "keywords": ["tts", "kokoro", "voice", "accessibility", "local"]
+  "keywords": [
+    "tts",
+    "kokoro",
+    "voice",
+    "accessibility",
+    "local"
+  ]
 }

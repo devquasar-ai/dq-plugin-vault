@@ -47,7 +47,7 @@ DEFAULTS = {
     "enabled": True,
     # "say" uses macOS's built-in voices and needs nothing at all, so it is the
     # default on a Mac. Elsewhere there is no built-in voice: "http" calls a
-    # kokoro-tts-server container (`/local-tts:tts server up`). "embedded" runs
+    # kokoro-tts-server container (`/dq-local-tts:tts server up`). "embedded" runs
     # Kokoro in the daemon (needs setup.sh).
     "backend": "say" if sys.platform == "darwin" else "http",
     "server_url": "http://localhost:42821",
