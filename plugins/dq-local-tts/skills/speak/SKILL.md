@@ -1,9 +1,8 @@
 ---
 name: speak
-description: Say something out loud with the local TTS voice
+description: Say something out loud with the local voice. Use when the user asks you to read something aloud or say it out loud.
 argument-hint: <text to speak>
 allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/tts-ctl.sh:*)
-disable-model-invocation: true
 ---
 
 Speak this aloud: $ARGUMENTS
