@@ -543,7 +543,13 @@ def since_ts(s):
         n, unit = int(m.group(1)), m.group(2)
         days = n * {"d": 1, "w": 7, "m": 30}[unit]
         return (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%S")
-    return s  # an ISO date like 2026-09-01
+    try:  # an ISO date like 2026-09-01: local midnight, compared in UTC like the stored values
+        local = datetime.fromisoformat(s)
+        if local.tzinfo is None:
+            local = local.astimezone()
+        return local.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+    except ValueError:
+        return s
 
 
 def cmd_search(db, args):
@@ -702,7 +708,8 @@ def cmd_show(db, args):
     s = db.execute("SELECT * FROM sessions WHERE session_id=?", (sid,)).fetchone()
     print(f"== {label(s)}  ({sid})")
     print(f"   project: {s['cwd'] or '?'}  branch: {s['git_branch'] or '-'}  host: {s['host']}")
-    print(f"   {day(s['started'])} → {day(s['updated'])}   user {s['n_user']} / assistant {s['n_assistant']}")
+    print(f"   {clock(s['started'])} → {clock(s['updated'])} ({tz_name()})   "
+          f"user {s['n_user']} / assistant {s['n_assistant']}")
     print(f"   resume: {resume_cmd(s)}\n")
     if args.around:
         mid = int(str(args.around).lstrip("#"))
@@ -730,7 +737,7 @@ def cmd_show(db, args):
             continue
         mark = " <<" if args.around and m["id"] == int(str(args.around).lstrip("#")) else ""
         text = m["text"] if args.full else trunc(m["text"], args.width)
-        print(f"#{m['id']} [{(m['ts'] or '')[:16]}] {m['role'].upper()}{mark}:\n{text}\n")
+        print(f"#{m['id']} [{clock(m['ts'])}] {m['role'].upper()}{mark}:\n{text}\n")
 
 
 def cmd_card(db, args):
@@ -1134,8 +1141,32 @@ def resume_cmd(s):
     return f"{cd}claude --resume {s['session_id']}"
 
 
+def to_local(ts):
+    """Stored timestamps are UTC ('...Z'); show them in the machine's local time."""
+    if not ts:
+        return None
+    try:
+        dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone()
+
+
 def day(ts):
-    return (ts or "")[:10] or "?"
+    dt = to_local(ts)
+    return dt.strftime("%Y-%m-%d") if dt else (ts or "")[:10] or "?"
+
+
+def clock(ts):
+    """'2026-10-11 15:58' in local time."""
+    dt = to_local(ts)
+    return dt.strftime("%Y-%m-%d %H:%M") if dt else (ts or "")[:16]
+
+
+def tz_name():
+    return datetime.now().astimezone().strftime("%Z")
 
 
 def trunc(t, n):

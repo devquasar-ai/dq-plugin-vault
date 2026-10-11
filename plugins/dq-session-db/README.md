@@ -194,6 +194,8 @@ archive.
 - **Incremental:** transcripts are append-only, so each file is read from the byte offset the
   last run stopped at, and the compressed copy grows by appending (concatenated gzip members are
   one valid gzip stream). Messages are keyed by event `uuid`, so re-reading never duplicates.
+- **Time zones:** timestamps are stored as Claude Code writes them, in UTC, and shown in your
+  machine's local time (listings, `show`, cards). `--since 2026-09-01` means local midnight.
 - **Resume:** records the directory each session started in, because `claude --resume` only
   finds a session from there.
 

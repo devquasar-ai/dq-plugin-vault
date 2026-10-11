@@ -76,6 +76,19 @@ merge near-duplicates.
 - Output JSON only."""
 
 
+def local_clock(ts):
+    """UTC 'Z' timestamp -> 'YYYY-MM-DD HH:MM' in local time ('?' if missing)."""
+    if not ts:
+        return "?"
+    try:
+        dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+    except ValueError:
+        return ts[:16]
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone().strftime("%Y-%m-%d %H:%M")
+
+
 # ------------------------------------------------------------------- config
 
 def config_path(db_path):
@@ -217,7 +230,7 @@ def fmt_message(m, limit):
     text = m["text"]
     if len(text) > limit:
         text = text[:limit] + f" …[+{len(text) - limit} chars]"
-    return f"#{m['id']} [{(m['ts'] or '')[:16]}] {m['role'].upper()}: {text}"
+    return f"#{m['id']} [{local_clock(m['ts'])}] {m['role'].upper()}: {text}"
 
 
 def chunks(rows, chunk_chars, message_chars):
@@ -252,7 +265,8 @@ def build_card(db, sid, cfg, full=False, log=print):
         return False
     s = db.execute("SELECT * FROM sessions WHERE session_id=?", (sid,)).fetchone()
     header = (f"Session {sid}, named \"{s['name'] or s['ai_title'] or 'untitled'}\", started in "
-              f"{s['cwd'] or '?'}, {(s['started'] or '?')[:10]} to {(s['updated'] or '?')[:10]}.")
+              f"{s['cwd'] or '?'}, {local_clock(s['started'])[:10]} to {local_clock(s['updated'])[:10]} "
+              f"(times are local, {datetime.now().astimezone().strftime('%Z')}).")
     batches = list(chunks(rows, opts["chunk_chars"], opts["message_chars"]))
     model = summ.get("model")
     for i, batch in enumerate(batches, 1):
@@ -356,9 +370,9 @@ def render(db, sid):
                 out.append(f"\n{label}:")
                 out += [f"  - {i.get('text', '')}" + (f"  (#{i['msg']})" if i.get("msg") else "")
                         for i in items]
-        stale = (f"; {newer[0]} newer messages up to {(newer[1] or '')[:10]} — `card {sid[:8]} --refresh`"
+        stale = (f"; {newer[0]} newer messages up to {local_clock(newer[1])[:10]} — `card {sid[:8]} --refresh`"
                  if newer[0] else " (current)")
-        out.append(f"\nCard: {row['generated_at'][:16]} by {row['model']}, covers through "
+        out.append(f"\nCard: {local_clock(row['generated_at'])} by {row['model']}, covers through "
                    f"#{row['covers_through']}{stale}")
     else:
         out.append(f"# {s['name'] or s['ai_title'] or '(untitled)'}\n(no card yet)")

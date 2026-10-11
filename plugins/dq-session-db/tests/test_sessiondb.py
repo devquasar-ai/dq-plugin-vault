@@ -254,6 +254,18 @@ class SessionDbTest(unittest.TestCase):
         self.run_cli("reindex", "--full", "-q")
         self.assertIn("No matches", self.run_cli("search", "walrus", "--all"))
 
+    def test_times_shown_in_local_time(self):
+        late = {"type": "user", "uuid": "z1", "sessionId": SID, "cwd": "/tmp/proj",
+                "timestamp": "2026-10-11T05:29:00.000Z", "message": {"content": "late evening walrus"}}
+        self.write(json.dumps(late) + "\n")
+        env = {**self.env, "TZ": "America/Los_Angeles"}
+        r = subprocess.run([sys.executable, SCRIPT, "show", SID[:8], "--all"], env=env,
+                           capture_output=True, text=True)
+        self.assertIn("[2026-10-10 22:29]", r.stdout)   # PDT, the evening before in UTC terms
+        self.assertIn("PDT", r.stdout)
+        r = subprocess.run([sys.executable, SCRIPT, "sessions"], env=env, capture_output=True, text=True)
+        self.assertIn("2026-10-10", r.stdout)
+
     def test_cards_off_by_default(self):
         self.write(event("user", 1, "hello"))
         self.assertIn("Session cards are OFF", self.run_cli("cards-ctl", "status"))
