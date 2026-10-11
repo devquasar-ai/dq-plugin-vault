@@ -1,11 +1,14 @@
 {
   "name": "dq-session-db",
+  "displayName": "DQ Session DB",
   "description": "Your Claude Code history, kept and searchable: find what was said or decided in any past session, see what it touched, and resume it, even after Claude Code has deleted the transcript.",
-  "version": "0.5.4",
+  "version": "0.6.0",
   "author": {
     "name": "DevQuasar",
     "url": "https://devquasar.com"
   },
+  "homepage": "https://github.com/devquasar-ai/skills/tree/main/plugins/dq-session-db",
+  "repository": "https://github.com/devquasar-ai/skills",
   "license": "MIT",
   "keywords": [
     "sessions",

@@ -1,7 +1,9 @@
 ---
+name: cards
 description: Control session summary cards (status/on/off/haiku/local/model/key/test/now)
-argument-hint: "[status|on|off|haiku|claude MODEL|local URL MODEL [KEY_ENV]|model NAME|url URL|key-env VAR|key KEY|thinking on|off|test|now [SESSION]|disable]"
+argument-hint: '[status|on|off|haiku|claude MODEL|local URL MODEL [KEY_ENV]|model NAME|url URL|key-env VAR|key KEY|thinking on|off|test|now [SESSION]|disable]'
 allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/cards-ctl.sh:*)
+disable-model-invocation: true
 ---
 
 Run `${CLAUDE_PLUGIN_ROOT}/scripts/cards-ctl.sh $ARGUMENTS` (use `status` when no

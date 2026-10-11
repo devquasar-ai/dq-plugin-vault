@@ -1,5 +1,6 @@
 {
   "name": "devquasar",
+  "description": "Free, local-first Claude Code plugins by DevQuasar: a searchable archive of your sessions, and a voice for your agent.",
   "owner": {
     "name": "DevQuasar",
     "url": "https://devquasar.com"

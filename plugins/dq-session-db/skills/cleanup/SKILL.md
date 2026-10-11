@@ -1,7 +1,9 @@
 ---
+name: cleanup
 description: Tidy the session archive - list, hide or remove quick lookup/test sessions (list/hide/remove/unhide/auto)
-argument-hint: "[list | hide [SESSION...] | remove [SESSION...] | unhide SESSION... | auto on|off]"
+argument-hint: '[list | hide [SESSION...] | remove [SESSION...] | unhide SESSION... | auto on|off]'
 allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/cleanup-ctl.sh:*)
+disable-model-invocation: true
 ---
 
 Run `${CLAUDE_PLUGIN_ROOT}/scripts/cleanup-ctl.sh $ARGUMENTS` (use `list` when no arguments
