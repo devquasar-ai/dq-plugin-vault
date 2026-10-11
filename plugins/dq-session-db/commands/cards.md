@@ -5,7 +5,10 @@ allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/cards-ctl.sh:*)
 ---
 
 Run `${CLAUDE_PLUGIN_ROOT}/scripts/cards-ctl.sh $ARGUMENTS` (use `status` when no
-arguments were given) and report its output verbatim in a couple of lines.
+arguments were given) then:
+
+Reply with the script's output exactly as it printed it, inside a code block: same
+lines, same words, nothing summarized or rephrased, and nothing added before or after.
 
 Pass arguments through unchanged. Put single quotes around any argument containing `${`,
 so a URL like `${MY_LLM_URL}/v1` is stored as written and expanded at call time.

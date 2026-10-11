@@ -5,7 +5,10 @@ allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/tts-ctl.sh:*)
 ---
 
 Run `${CLAUDE_PLUGIN_ROOT}/scripts/tts-ctl.sh $ARGUMENTS` (use `status` when no
-arguments were given) and report its output verbatim in a couple of lines.
+arguments were given) then:
+
+Reply with the script's output exactly as it printed it, inside a code block: same
+lines, same words, nothing summarized or rephrased, and nothing added before or after.
 
 `server up` may print a first-time-setup notice and take several minutes: it
 pulls a multi-GB image, and falls back to building from the bundled source if

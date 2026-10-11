@@ -5,7 +5,10 @@ allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/cleanup-ctl.sh:*)
 ---
 
 Run `${CLAUDE_PLUGIN_ROOT}/scripts/cleanup-ctl.sh $ARGUMENTS` (use `list` when no arguments
-were given) and report its output: the sessions it lists, and what it did.
+were given), then:
+
+Reply with the script's output exactly as it printed it, inside a code block: same
+lines, same words, nothing summarized or rephrased, and nothing added before or after.
 
 `remove` deletes sessions. Without `--yes` it only shows what would be removed. Show that list
 to the user and ask them to confirm. Run it again with `--yes` added only after they say yes
