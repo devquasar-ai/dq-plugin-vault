@@ -1,0 +1,12 @@
+services:
+  kokoro-tts:
+    build: .
+    image: kokoro-tts-server:latest
+    container_name: kokoro-tts
+    ports:
+      - "42821:8080"
+    environment:
+      # Comma-separated languages to load at startup: a=American, b=British.
+      KOKORO_PRELOAD: "a"
+      LOG_LEVEL: "INFO"
+    restart: unless-stopped

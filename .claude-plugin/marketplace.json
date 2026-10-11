@@ -1,0 +1,19 @@
+{
+  "name": "devquasar",
+  "owner": {
+    "name": "DevQuasar",
+    "url": "https://devquasar.com"
+  },
+  "plugins": [
+    {
+      "name": "session-db",
+      "source": "./plugins/session-db",
+      "description": "Your Claude Code history, kept and searchable: find what was said or decided in any past session, see what it touched, and resume it, even after Claude Code has deleted the transcript."
+    },
+    {
+      "name": "local-tts",
+      "source": "./plugins/local-tts",
+      "description": "Speaks Claude Code's replies aloud, fully on your machine: macOS voices out of the box, or Kokoro. No cloud, no API key."
+    }
+  ]
+}
