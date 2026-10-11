@@ -1,6 +1,6 @@
 ---
 name: sessions
-description: Search, read and resume past Claude Code sessions from a local full-text archive. Use when the user refers to another or earlier session (by name, id, or topic), asks what was said, decided or done before ("what did we decide about X", "where did I leave off on Y", "find the session where..."), wants to resume or continue earlier work, or when you need context from past work on a project before advising on it.
+description: Search, read and resume past Claude Code sessions (the session-db / session database, chat history, previous conversations, old transcripts) from a local full-text archive. Use when the user refers to another or earlier session (by name, id, or topic), asks what was said, decided or done before ("what did we decide about X", "where did I leave off on Y", "find the session where...", "use the session db"), wants to resume or continue earlier work, or when you need context from past work on a project before advising on it. Prefer this over grepping ~/.claude/projects or querying the database with sqlite3.
 allowed-tools:
   - Bash
 ---

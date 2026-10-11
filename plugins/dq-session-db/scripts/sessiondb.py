@@ -427,6 +427,40 @@ def transcripts(root):
 
 # --------------------------------------------------------------------- commands
 
+HOWTO = """This folder is the session-db archive of Claude Code sessions.
+
+Don't query sessions.db directly or grep the transcripts. Use the tool, which keeps the
+index current and searches it properly:
+
+  python3 "{script}" search "<words>" --by-session     which sessions mention it
+  python3 "{script}" search "<words>"                  matching messages with #ids
+  python3 "{script}" show <session> --around <#id>     read around a hit
+  python3 "{script}" sessions --status                 recent sessions
+  python3 "{script}" card <session>                    summary, files and commits
+  python3 "{script}" resume <session>                  command to resume it
+
+<session> is an id, an id prefix, or a session name. Plain words are ANDed.
+"""
+
+
+def write_howto(db_path):
+    """Leave usage instructions next to the archive, for agents that find the folder
+    without loading the skill. Refreshed so the script path stays current."""
+    p = os.path.join(os.path.dirname(db_path), "HOW-TO-SEARCH.txt")
+    text = HOWTO.format(script=os.path.abspath(__file__))
+    try:
+        with open(p) as f:
+            if f.read() == text:
+                return
+    except OSError:
+        pass
+    try:
+        with open(p, "w") as f:
+            f.write(text)
+    except OSError:
+        pass
+
+
 def run_index(db, db_path, roots=None, force=False, wait=False):
     """Index new transcript lines. Returns (files, added) or None if another run holds the lock."""
     lock = open(db_path + ".lock", "w")
@@ -435,6 +469,7 @@ def run_index(db, db_path, roots=None, force=False, wait=False):
     except OSError:
         return None
     host = socket.gethostname().split(".")[0]
+    write_howto(db_path)
     files = added = 0
     try:
         for root in roots or [DEFAULT_SOURCE]:
