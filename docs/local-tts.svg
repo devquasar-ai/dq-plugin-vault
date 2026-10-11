@@ -33,6 +33,6 @@
   <text x="852" y="146" font-size="30">🔊</text>
   <text x="846" y="176" font-size="13" fill="#334155">speakers</text>
 
-  <text x="32" y="270" font-size="13" fill="#475569">No cloud, no API key. Turn it on and off with /dq-local-tts:tts on|off, switch voices with /dq-local-tts:tts voice.</text>
+  <text x="32" y="270" font-size="13" fill="#475569">No cloud, no API key. Turn it on and off with /dq-local-tts:tts on / off, switch voices with /dq-local-tts:tts voice.</text>
   <text x="32" y="292" font-size="13" fill="#475569">Kokoro voices work on any OS; on Linux, /dq-local-tts:tts server up starts the container.</text>
 </svg>
