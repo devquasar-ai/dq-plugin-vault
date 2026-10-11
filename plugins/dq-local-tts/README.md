@@ -146,7 +146,7 @@ bundled `server/` source if not.
 
 ```sh
 /dq-local-tts:tts server up          # pull-or-start the container, wait for /health
-/dq-local-tts:tts backend http       # switch the plugin over (restarts the daemon)
+/dq-local-tts:tts backend kokoro-server   # switch the plugin over (restarts the daemon)
 /dq-local-tts:tts status             # confirm reachable and API-compatible
 ```
 
@@ -157,7 +157,7 @@ WAV, so filtering, chunking, `/dq-local-tts:tts stop` and playback behave exactl
 other backends.
 
 ```sh
-/dq-local-tts:tts backend say
+/dq-local-tts:tts backend macos
 /dq-local-tts:tts voice              # lists macOS voices, English first
 /dq-local-tts:tts voice Samantha     # "" or unset = the system default voice
 ```
@@ -174,7 +174,7 @@ Needs `espeak-ng` (Kokoro's phonemizer) and Python 3.9+.
 ```sh
 brew install espeak-ng          # or: sudo apt-get install espeak-ng
 ./setup.sh                      # venv + torch + model cache
-/dq-local-tts:tts backend embedded
+/dq-local-tts:tts backend kokoro
 ```
 
 `setup.sh` builds `~/.local/share/local-tts/venv` (~1.1 GB) outside the plugin
@@ -194,7 +194,7 @@ Speaking is on by default; it starts working after the next reply.
 | `/dq-local-tts:tts voice bm_george` | Switch voice (restarts the daemon); on `say`, a macOS voice |
 | `/dq-local-tts:tts speed 1.15` | 0.5–2.0; ~1.15 is a good skim speed |
 | `/dq-local-tts:tts backend` | Show the current backend and its settings |
-| `/dq-local-tts:tts backend embedded\|http\|say` | Switch synthesis backend |
+| `/dq-local-tts:tts backend macos\|kokoro\|kokoro-server` | Switch voices: macOS built-in (`say`), Kokoro in the plugin (`embedded`), or a Kokoro server (`http`). The short names in brackets work too. |
 | `/dq-local-tts:tts server up\|down\|restart\|status\|logs\|rm` | Manage the TTS container |
 | `/dq-local-tts:tts server pull` / `build` | Fetch the published image, or build the bundled source |
 | `/dq-local-tts:tts restart` | Restart the daemon (picks up new plugin code) |

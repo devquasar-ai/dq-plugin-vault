@@ -40,8 +40,10 @@ BOOL = {"true": True, "1": True, "yes": True, "on": True,
 
 def coerce(key, raw):
     if key == "backend":
+        raw = ttslib.BACKEND_ALIASES.get(raw.lower(), raw.lower())
         if raw not in BACKENDS:
-            raise SystemExit(f"backend must be one of {', '.join(BACKENDS)}, got {raw!r}")
+            raise SystemExit("backend must be one of: macos (say), kokoro (embedded), "
+                             f"kokoro-server (http); got {raw!r}")
         return raw
     if key in ("enabled",):
         if raw.lower() not in BOOL:
@@ -121,7 +123,7 @@ def main():
             print(f"             STALE - daemon runs {running}; apply {version} with: /dq-local-tts:tts restart")
     else:
         print("  daemon   : not running (starts on the next reply)")
-    print(f"  backend  : {cfg['backend']}")
+    print(f"  backend  : {ttslib.backend_label(cfg['backend'])}")
     if cfg["backend"] == "http":
         print(f"  server   : {cfg['server_url']}", end="")
         try:
@@ -137,11 +139,11 @@ def main():
                       f"loaded: {info.get('loaded_pipelines') or 'none yet'})")
         except Exception as exc:
             print(f"  UNREACHABLE ({exc})")
-            print("             start it with: /tts server up")
+            print("             start it with: /dq-local-tts:tts server up")
     elif cfg["backend"] == "say":
         ok = sys.platform == "darwin" and subprocess.run(
             ["which", "say"], capture_output=True).returncode == 0
-        print(f"  say      : {'ok' if ok else 'UNAVAILABLE - needs macOS'}")
+        print(f"  check    : {'ready, nothing to install' if ok else 'UNAVAILABLE - needs macOS; use kokoro or kokoro-server'}")
     elif not ttslib.VENV_PYTHON.exists():
         print(f"  venv     : {ttslib.VENV}  MISSING - run setup.sh")
     else:

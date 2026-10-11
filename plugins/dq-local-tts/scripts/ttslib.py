@@ -43,6 +43,22 @@ def plugin_version() -> str:
     except (OSError, ValueError):
         return "unknown"
 
+# What each backend is, in words a user recognises. The config keeps the short
+# internal names (say / embedded / http) so existing settings keep working.
+BACKEND_LABELS = {
+    "say": "macOS built-in voices",
+    "embedded": "Kokoro voices, running in this plugin",
+    "http": "Kokoro voices, from a local server",
+}
+# Friendlier names accepted on the command line.
+BACKEND_ALIASES = {"macos": "say", "mac": "say", "kokoro": "embedded",
+                   "kokoro-server": "http", "server": "http"}
+
+
+def backend_label(name):
+    return f"{BACKEND_LABELS.get(name, name)} ({name})"
+
+
 DEFAULTS = {
     "enabled": True,
     # "say" uses macOS's built-in voices and needs nothing at all, so it is the

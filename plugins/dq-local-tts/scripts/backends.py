@@ -48,7 +48,7 @@ class EmbeddedBackend:
                 f"Run setup.sh to build the venv at {ttslib.VENV}")
 
     def describe(self):
-        return f"embedded (venv {ttslib.VENV})"
+        return f"{ttslib.backend_label('embedded')}, venv {ttslib.VENV}"
 
     def _pipeline(self, lang):
         if lang not in self._pipelines:
@@ -122,7 +122,7 @@ class HttpBackend:
                 "loaded": info.get("loaded_pipelines") or []}
 
     def describe(self):
-        return f"http ({self.url})"
+        return f"{ttslib.backend_label('http')} at {self.url}"
 
     def warm(self):
         self.check()
@@ -168,7 +168,7 @@ class SayBackend:
             raise BackendError("the 'say' backend needs macOS and its built-in `say` command")
 
     def describe(self):
-        return f"say ({self.cfg.get('say_voice') or 'system default voice'})"
+        return f"{ttslib.backend_label('say')}, voice: {self.cfg.get('say_voice') or 'system default'}"
 
     def warm(self):
         pass
