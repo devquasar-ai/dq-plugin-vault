@@ -33,6 +33,7 @@ class SessionDbTest(unittest.TestCase):
         self.transcript = os.path.join(self.proj, SID + ".jsonl")
         self.db = os.path.join(root, "db", "sessions.db")
         self.env = {**os.environ, "SESSION_DB_SOURCE": self.src, "SESSION_DB": self.db}
+        self.env.pop("CLAUDE_CODE_SESSION_ID", None)
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -167,6 +168,74 @@ class SessionDbTest(unittest.TestCase):
         self.assertTrue(os.path.isdir(legacy + ".migrated"))
         self.assertFalse(os.path.exists(legacy))
         self.assertEqual(os.stat(new).st_mode & 0o777, 0o700)
+
+    def add_session(self, sid, *lines):
+        path = os.path.join(self.proj, sid + ".jsonl")
+        with open(path, "w") as f:
+            f.write("".join(l.replace(SID, sid) for l in lines))
+        return path
+
+    def no_idle_wait(self):
+        os.makedirs(os.path.dirname(self.db), exist_ok=True)
+        with open(os.path.join(os.path.dirname(self.db), "config.json"), "w") as f:
+            json.dump({"cleanup": {"idle_hours": 0}}, f)
+
+    def test_current_session_left_out_of_search(self):
+        self.write(event("user", 1, "unique quokka"))
+        env = {**self.env, "CLAUDE_CODE_SESSION_ID": SID}
+        r = subprocess.run([sys.executable, SCRIPT, "search", "quokka"], env=env,
+                           capture_output=True, text=True)
+        self.assertIn("No matches", r.stdout)
+        r = subprocess.run([sys.executable, SCRIPT, "search", "quokka", "--include-current"],
+                           env=env, capture_output=True, text=True)
+        self.assertIn("[quokka]", r.stdout)
+
+    def test_cleanup_finds_lookups_and_tiny_but_not_real_work(self):
+        self.no_idle_wait()
+        lookup = "11111111-0000-0000-0000-000000000000"
+        work = "22222222-0000-0000-0000-000000000000"
+        call = {"type": "assistant", "uuid": "x1", "sessionId": SID, "cwd": "/tmp/proj",
+                "timestamp": "2026-10-01T10:00:00Z", "message": {"content": [
+                    {"type": "tool_use", "name": "Bash",
+                     "input": {"command": "python3 sessiondb.py search pelican"}}]}}
+        for i in range(5):
+            self.add_session(lookup, *[event("user", i, f"find pelican {i}")])
+        self.add_session(lookup, *[event("user", i, f"find pelican {i}") for i in range(5)],
+                         json.dumps(call) + "\n")
+        write = dict(call, uuid="x2", message={"content": [
+            {"type": "tool_use", "name": "Write", "input": {"file_path": "/tmp/proj/x.py"}}]})
+        self.add_session(work, event("user", 1, "build it"), json.dumps(write) + "\n")
+        self.write(event("user", 1, "hi"))  # tiny
+        out = self.run_cli("cleanup")
+        self.assertIn(lookup, out)
+        self.assertIn("lookup", out)
+        self.assertIn(SID, out)
+        self.assertIn("tiny", out)
+        self.assertNotIn(work, out)
+        self.assertIn("Nothing changed", out)
+
+    def test_hide_and_unhide(self):
+        self.no_idle_wait()
+        self.write(event("user", 1, "hidden marmot"))
+        self.run_cli("cleanup", "--hide")
+        self.assertIn("No matches", self.run_cli("search", "marmot"))
+        self.assertIn("[marmot]", self.run_cli("search", "marmot", "--all"))
+        self.run_cli("unhide", SID[:8])
+        self.assertIn("[marmot]", self.run_cli("search", "marmot"))
+
+    def test_remove_needs_yes_backs_up_and_stays_removed(self):
+        self.no_idle_wait()
+        self.write(event("user", 1, "doomed walrus"))
+        self.run_cli("index", "-q")
+        self.assertIn("Re-run with --yes", self.run_cli("cleanup", "--remove"))
+        self.assertIn("[walrus]", self.run_cli("search", "walrus"))
+        out = self.run_cli("cleanup", "--remove", "--yes")
+        self.assertIn("Removed 1 session(s)", out)
+        backup = out.split("Backup: ")[1].strip()
+        self.assertTrue(os.path.exists(os.path.join(backup, "sessions.db")))
+        self.assertTrue(any(f.endswith(".jsonl.gz") for f in os.listdir(backup)))
+        self.run_cli("reindex", "--full", "-q")
+        self.assertIn("No matches", self.run_cli("search", "walrus", "--all"))
 
     def test_cards_off_by_default(self):
         self.write(event("user", 1, "hello"))

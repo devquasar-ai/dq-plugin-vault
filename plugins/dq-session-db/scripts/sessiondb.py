@@ -35,7 +35,7 @@ DATA_HOME = os.environ.get("SESSION_DB_HOME") or os.path.join(
 DEFAULT_DB = os.environ.get("SESSION_DB", os.path.join(DATA_HOME, "sessions.db"))
 LEGACY_HOME = os.path.join(HOME, ".claude", "session-db")  # used by versions before 0.4
 MAX_TEXT = 20000  # per message; long pastes are truncated, not dropped
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 # Harness-injected text that is noise for search.
 NOISE_BLOCK = re.compile(
@@ -187,6 +187,16 @@ def connect(path):
         """
     )
     cols = {r[1] for r in db.execute("PRAGMA table_info(files)")}
+    scols = {r[1] for r in db.execute("PRAGMA table_info(sessions)")}
+    if "hidden" not in scols:
+        # v4: hidden sessions, removed-session tombstones, and lookup detection. Re-read
+        # every transcript to find lookups, keeping archive progress (offset 0, size -1
+        # forces the re-read; `archived` stays, so copies are not rewritten).
+        db.execute("ALTER TABLE sessions ADD COLUMN hidden INTEGER DEFAULT 0")
+        db.execute("ALTER TABLE sessions ADD COLUMN hidden_reason TEXT")
+        db.execute("UPDATE files SET offset=0, size=-1")
+    db.execute("""CREATE TABLE IF NOT EXISTS removed (
+        session_id TEXT PRIMARY KEY, name TEXT, removed_at TEXT, backup TEXT)""")
     if "archived" not in cols:
         # v3: compressed copies of the raw transcripts; existing rows start at 0 and are
         # backfilled from whatever source files still exist.
@@ -240,6 +250,17 @@ def record_touches(db, sid, event):
             touch(db, sid, "file", inp["file_path"], ts)
         elif name == "Bash" and GIT_OP.search(inp.get("command") or ""):
             touch(db, sid, "git", git_summary(inp["command"], event.get("cwd") or ""), ts)
+        if is_lookup(name, inp):
+            touch(db, sid, "lookup", "session-db", ts)
+
+
+def is_lookup(name, inp):
+    """Did this tool call use session-db itself? Such sessions are mostly 'find that session'."""
+    if name == "Skill":
+        return "session-db" in str(inp.get("skill") or inp.get("command") or "")
+    if name == "Bash":
+        return bool(re.search(r"sessiondb\.py|cards-ctl\.sh", inp.get("command") or ""))
+    return False
 
 
 def git_summary(cmd, cwd):
@@ -309,6 +330,9 @@ def index_file(db, path, host, force=False, db_path=None):
         st = os.stat(path)
     except OSError:
         return 0
+    if db.execute("SELECT 1 FROM removed WHERE session_id=?",
+                  (os.path.splitext(os.path.basename(path))[0],)).fetchone():
+        return 0  # removed by the user; never bring it back
     row = db.execute("SELECT size, offset FROM files WHERE path=?", (path,)).fetchone()
     offset = 0
     if row and not force:
@@ -440,6 +464,9 @@ index current and searches it properly:
   python3 "{script}" resume <session>                  command to resume it
 
 <session> is an id, an id prefix, or a session name. Plain words are ANDed.
+
+In Claude Code, the user can also call the skill directly, which works best with local
+models: /dq-session-db:sessions <question>
 """
 
 
@@ -491,6 +518,8 @@ def cmd_index(db, args):
         return
     files, added = res
     if getattr(args, "cards", False):
+        cmd_cleanup(db, argparse.Namespace(db=args.db, auto=True, sessions=None,
+                                           remove=False, hide=False, yes=False))
         cmd_cards(db, argparse.Namespace(db=args.db, auto=True, all=False, full=False,
                                          session=None, quiet=args.quiet))
     if not args.quiet:
@@ -522,6 +551,7 @@ def cmd_search(db, args):
     if args.cards:
         return search_cards(db, q, args)
     where, params = ["messages_fts MATCH ?"], [q]
+    where, params = visibility(where, params, args, "s")
     if args.project:
         where.append("(s.project LIKE ? OR s.cwd LIKE ?)")
         params += [f"%{args.project}%"] * 2
@@ -580,8 +610,9 @@ def search_cards(db, q, args):
                       snippet(cards_fts, 1, '[', ']', ' … ', 24) AS snip
                FROM cards_fts f JOIN sessions s ON s.session_id = f.session_id
                JOIN cards c ON c.session_id = f.session_id
-               WHERE cards_fts MATCH ? ORDER BY bm25(cards_fts) LIMIT ?""",
-            (q, args.limit)).fetchall()
+               WHERE cards_fts MATCH ? AND {cond} ORDER BY bm25(cards_fts) LIMIT ?""".format(
+                cond=" AND ".join(visibility([], [], args, "s")[0]) or "1"),
+            [q] + visibility([], [], args, "s")[1] + [args.limit]).fetchall()
     except sqlite3.OperationalError as e:
         sys.exit(f"Bad query {q!r}: {e}")
     if not rows:
@@ -595,8 +626,22 @@ def search_cards(db, q, args):
     print("\nFull card: sessiondb.py card <session>")
 
 
+def visibility(where, params, args, alias):
+    """Hide hidden sessions (unless --all) and the session doing the searching."""
+    where, params = list(where), list(params)
+    if not getattr(args, "all", False):
+        where.append(f"coalesce({alias}.hidden, 0) = 0")
+    current = os.environ.get("CLAUDE_CODE_SESSION_ID")
+    if current and not getattr(args, "include_current", False):
+        where.append(f"{alias}.session_id != ?")
+        params.append(current)
+    return where, params
+
+
 def cmd_sessions(db, args):
     where, params = [], []
+    if not args.all:
+        where.append("coalesce(hidden, 0) = 0")
     if args.project:
         where.append("(project LIKE ? OR cwd LIKE ?)")
         params += [f"%{args.project}%"] * 2
@@ -837,6 +882,130 @@ def cmd_cards_ctl(db, args):
         say(CTL_USAGE)
 
 
+# ------------------------------------------------------------------ cleanup
+
+CLEANUP_DEFAULTS = {"auto": "off", "idle_hours": 24,
+                    "tiny_max_user_messages": 3, "tiny_max_chars": 3000,
+                    "lookup_max_user_messages": 6}
+
+
+def cleanup_config(db_path):
+    return {**CLEANUP_DEFAULTS, **(cards.read_raw(db_path).get("cleanup") or {})}
+
+
+def cleanup_candidates(db, opts):
+    """Quiet sessions with no lasting output: lookups (used session-db, wrote nothing) and
+    tiny ones (few user messages, wrote nothing). Never the current session."""
+    idle = (datetime.now(timezone.utc) - timedelta(hours=opts["idle_hours"])).strftime(
+        "%Y-%m-%dT%H:%M:%S")
+    rows = db.execute(
+        """SELECT s.*, (SELECT COUNT(*) FROM touches t WHERE t.session_id=s.session_id
+                         AND t.kind IN ('file','git')) AS outputs,
+                  (SELECT COUNT(*) FROM touches t WHERE t.session_id=s.session_id
+                         AND t.kind='lookup') AS lookups,
+                  (SELECT coalesce(SUM(length(text)), 0) FROM messages m
+                         WHERE m.session_id=s.session_id) AS chars
+           FROM sessions s WHERE coalesce(s.hidden, 0) = 0 AND coalesce(s.updated, '') < ?
+           ORDER BY s.updated DESC""", (idle,)).fetchall()
+    current = os.environ.get("CLAUDE_CODE_SESSION_ID")
+    out = []
+    for r in rows:
+        if r["session_id"] == current or r["outputs"]:
+            continue
+        n_user = r["n_user"] or 0
+        # Both rules ask for a small conversation: a two-question session with long, careful
+        # answers is real work, and so is a long session that searched once along the way.
+        if r["lookups"] and n_user <= opts["lookup_max_user_messages"]:
+            out.append((r, f"lookup: used session-db, {n_user} message(s), wrote nothing"))
+        elif n_user <= opts["tiny_max_user_messages"] and r["chars"] < opts["tiny_max_chars"]:
+            out.append((r, f"tiny: {n_user} message(s), {r['chars']} chars, wrote nothing"))
+    return out
+
+
+def set_hidden(db, sids, hidden, reason=None):
+    db.executemany("UPDATE sessions SET hidden=?, hidden_reason=? WHERE session_id=?",
+                   [(1 if hidden else 0, reason if hidden else None, sid) for sid in sids])
+    db.commit()
+
+
+def remove_sessions(db, db_path, sids):
+    """Delete sessions from the archive, after backing up the database and moving their
+    compressed transcripts aside. Tombstones keep them from being indexed again."""
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    bdir = os.path.join(os.path.dirname(db_path), "backups", f"removed-{stamp}")
+    os.makedirs(bdir, mode=0o700, exist_ok=True)
+    os.chmod(os.path.dirname(bdir), 0o700)
+    src, dst = db, sqlite3.connect(os.path.join(bdir, "sessions.db"))
+    try:
+        src.backup(dst)
+    finally:
+        dst.close()
+    os.chmod(os.path.join(bdir, "sessions.db"), 0o600)
+    for sid in sids:
+        name = db.execute("SELECT coalesce(name, ai_title) FROM sessions WHERE session_id=?",
+                          (sid,)).fetchone()
+        for f in db.execute("SELECT path FROM files WHERE session_id=?", (sid,)).fetchall():
+            a = archive_path(db_path, f["path"])
+            if os.path.exists(a):
+                shutil.move(a, os.path.join(bdir, os.path.basename(a)))
+        for table in ("messages", "touches", "segments", "cards", "files"):
+            db.execute(f"DELETE FROM {table} WHERE session_id=?", (sid,))
+        db.execute("DELETE FROM cards_fts WHERE session_id=?", (sid,))
+        db.execute("DELETE FROM sessions WHERE session_id=?", (sid,))
+        db.execute("INSERT OR REPLACE INTO removed VALUES (?,?,?,?)",
+                   (sid, name[0] if name else None, now_iso(), bdir))
+    db.commit()
+    return bdir
+
+
+def cmd_cleanup(db, args):
+    opts = cleanup_config(args.db)
+    if args.auto:  # from the hook: only ever hides, and only if the user turned it on
+        if opts["auto"] == "hide":
+            found = cleanup_candidates(db, opts)
+            set_hidden(db, [r["session_id"] for r, _ in found], True, "auto")
+        return
+    if args.sessions:
+        sids = [x for x in (resolve(db, k) for k in args.sessions) if x]
+        found = [(db.execute("SELECT * FROM sessions WHERE session_id=?", (sid,)).fetchone(),
+                  "named by you") for sid in sids]
+    else:
+        found = cleanup_candidates(db, opts)
+    if not found:
+        print("Nothing to clean up.")
+        return
+    for r, why in found:
+        print(f"{r['session_id']}  {day(r['updated'])}  {label(r)[:40]:40}  {why}")
+    if args.remove:
+        if not args.yes:
+            print(f"\n{len(found)} session(s) would be REMOVED (deleted after a backup). "
+                  "Re-run with --yes to confirm.")
+            return
+        bdir = remove_sessions(db, args.db, [r["session_id"] for r, _ in found])
+        print(f"\nRemoved {len(found)} session(s). Backup: {bdir}")
+    elif args.hide:
+        set_hidden(db, [r["session_id"] for r, _ in found], True, "cleanup")
+        print(f"\nHid {len(found)} session(s). They stay in the archive; see them with "
+              "`sessions --all`, bring one back with `unhide <session>`.")
+    else:
+        print(f"\n{len(found)} candidate(s). Nothing changed. Use --hide (reversible) or "
+              "--remove --yes (deletes, after a backup).")
+
+
+def cmd_unhide(db, args):
+    sids = [x for x in (resolve(db, k) for k in args.sessions) if x]
+    set_hidden(db, sids, False)
+    print(f"Unhid {len(sids)} session(s).")
+
+
+def cmd_cleanup_auto(db, args):
+    raw = cards.read_raw(args.db)
+    raw.setdefault("cleanup", dict(CLEANUP_DEFAULTS))["auto"] = "hide" if args.mode == "on" else "off"
+    cards.write_raw(args.db, raw)
+    print(f"automatic cleanup: {'hide quiet lookup/tiny sessions' if args.mode == 'on' else 'off'}"
+          " (removing always needs you)")
+
+
 def urllib_errors():
     import urllib.error
     return (urllib.error.URLError, TimeoutError, ConnectionError, OSError)
@@ -945,7 +1114,8 @@ def now_iso():
 
 # ------------------------------------------------------------------------- main
 
-READ_COMMANDS = {"search", "sessions", "show", "resume", "stats", "card", "cards", "cards-ctl", "restore"}
+READ_COMMANDS = {"search", "sessions", "show", "resume", "stats", "card", "cards", "cards-ctl",
+                 "restore", "cleanup", "unhide"}
 
 
 def main():
@@ -974,11 +1144,15 @@ def main():
     p.add_argument("--recent", action="store_true", help="newest first instead of best match")
     p.add_argument("--by-session", action="store_true", help="one line per matching session")
     p.add_argument("--raw", action="store_true", help="pass the query to FTS5 unchanged")
+    p.add_argument("--all", action="store_true", help="include hidden sessions")
+    p.add_argument("--include-current", action="store_true",
+                   help="include the session doing the searching")
     p.add_argument("--cards", action="store_true", help="search summary cards instead of messages")
 
     p = sub.add_parser("sessions", help="list sessions, most recent first")
     p.add_argument("-n", "--limit", type=int, default=25)
     p.add_argument("--status", action="store_true", help="show each card's status line")
+    p.add_argument("--all", action="store_true", help="include hidden sessions")
     p.add_argument("-p", "--project")
     p.add_argument("--since")
 
@@ -992,6 +1166,19 @@ def main():
     p.add_argument("--role", choices=["user", "assistant", "summary"])
     p.add_argument("--full", action="store_true", help="do not truncate messages")
     p.add_argument("-w", "--width", type=int, default=1500)
+
+    p = sub.add_parser("cleanup", help="list quiet lookup/tiny sessions; --hide or --remove them")
+    p.add_argument("sessions", nargs="*", help="act on these instead of the candidates")
+    p.add_argument("--hide", action="store_true", help="hide them (reversible)")
+    p.add_argument("--remove", action="store_true", help="delete them, after a backup")
+    p.add_argument("--yes", action="store_true", help="confirm --remove")
+    p.add_argument("--auto", action="store_true", help=argparse.SUPPRESS)
+
+    p = sub.add_parser("unhide", help="bring hidden sessions back")
+    p.add_argument("sessions", nargs="+")
+
+    p = sub.add_parser("cleanup-auto", help="automatic hiding of quiet lookup/tiny sessions")
+    p.add_argument("mode", choices=["on", "off"])
 
     p = sub.add_parser("restore", help="put a deleted transcript back from its compressed copy")
     p.add_argument("session")
@@ -1039,7 +1226,8 @@ def main():
          "sessions": cmd_sessions, "show": cmd_show, "resume": cmd_resume, "stats": cmd_stats,
          "card": cmd_card, "cards": cmd_cards, "config": cmd_config,
          "cards-setup": cmd_cards_setup, "cards-ctl": cmd_cards_ctl,
-         "restore": cmd_restore}[args.cmd](db, args)
+         "restore": cmd_restore, "cleanup": cmd_cleanup, "unhide": cmd_unhide,
+         "cleanup-auto": cmd_cleanup_auto}[args.cmd](db, args)
     finally:
         db.close()
 

@@ -49,6 +49,41 @@ sessiondb.py restore billing-refactor                  # bring back a deleted tr
 
 A session can be named by its id, the start of its id, or its name (`/rename`) or title.
 
+### With local models
+
+Claude picks up the `sessions` skill on its own. Smaller local models (run through Claude Code
+with a local endpoint) often don't: they grep transcripts, query the database by hand, or look
+in the wrong place. Call the skill explicitly and it works the same:
+
+```
+/dq-session-db:sessions find the session about the billing refactor
+```
+
+## Keeping it tidy
+
+Every "find the session about X" is itself a new session that mentions X, so quick lookups and
+small tests pile up and crowd the results. session-db handles this three ways:
+
+- **The current session is never in its own results.**
+- **Cleanup candidates** are sessions quiet for a day that wrote no files and made no commits,
+  and are small: either a lookup (used session-db, 6 or fewer of your messages) or tiny (3 or
+  fewer of your messages and under ~3,000 characters in total). Thresholds are in
+  `config.json` under `cleanup`.
+- **You choose what happens** with `/dq-session-db:cleanup`:
+
+```
+/dq-session-db:cleanup                  list candidates and why; changes nothing
+/dq-session-db:cleanup hide             hide them: kept in the archive, out of results
+/dq-session-db:cleanup remove           delete them, after you confirm, with a backup first
+/dq-session-db:cleanup unhide SESSION   bring a hidden session back
+/dq-session-db:cleanup auto on|off      hide new candidates automatically (never removes)
+```
+
+`hide` and `remove` also take session names or ids instead of the candidate list. Removing backs
+up the database and moves the session's compressed transcript to
+`~/.local/share/session-db/backups/removed-<date>/`, and a removed session is never indexed
+again. `sessions --all` and `search --all` include hidden sessions.
+
 ## Your history, kept
 
 Every transcript gets a compressed copy in `~/.local/share/session-db/transcripts/`, kept up to date
@@ -178,11 +213,9 @@ Database: `~/.local/share/session-db/sessions.db` (override the folder with `SES
   (only cards would need the model again): the safety net for any future format change.
 - **Export / import** in a version-neutral format (sessions, messages, cards as JSON lines),
   for moving between machines or across major versions.
-- **Retiring sessions.** Suggest, never delete: mark old sessions dormant so they rank lower; an
-  exclude list for folders that should not be indexed; a manual `forget <session>`.
+- **More cleanup rules:** an exclude list for folders that should not be indexed; dormant
+  sessions ranking lower.
 - **Multiple machines.** Rows already record their `host`, so archives can be merged later.
-- **Leave out the current session** from search results by default (it otherwise matches its
-  own question).
 - **Local-only sessions.** Flag a session or project so its content is only shown to, or
   summarized by, a local model.
 

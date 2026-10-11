@@ -43,6 +43,19 @@ Search filters: `-p/--project <substr>`, `-s/--session <session>`, `--role user|
 `--since 7d|4w|3m|2026-09-01`, `--recent` (newest first), `-n` (limit). Plain words are ANDed;
 use `--raw` for FTS5 syntax (`"exact phrase"`, `OR`, `NEAR`, `prefix*`).
 
+Search and `sessions` leave out hidden sessions (add `--all`) and the session you are in
+(add `--include-current`).
+
+**Past sessions are not artifacts.** Don't look for them with an Artifact or claude.ai listing
+tool, in `~/.claude/projects` with grep, or in the database with sqlite3. Use the commands above.
+
+## Cleanup
+
+Quick lookups ("find the session about X") and tiny test sessions pile up and repeat the
+words people search for. `/dq-session-db:cleanup` lists them; `hide` is reversible; `remove`
+deletes after a backup. **Never remove sessions unless the user has confirmed it in this
+conversation.**
+
 ## Summary cards are opt-in
 
 Cards are off until the user turns them on; everything else works without them. Never change
