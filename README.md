@@ -1,15 +1,7 @@
 # DevQuasar skills
 
-Free, local-first skills and plugins for AI coding agents, by [DevQuasar](https://devquasar.com).
-
-| Plugin | What it does |
-|---|---|
-| [dq-session-db](plugins/dq-session-db/) | Your Claude Code history, kept and searchable. Find what was said or decided in any past session, see which files and commits it touched, and resume it, even after Claude Code has deleted the transcript. Optional summary cards from a model you choose. |
-| [dq-local-tts](plugins/dq-local-tts/) | Hear Claude's replies, spoken entirely on your machine. macOS voices out of the box; Kokoro voices on any OS. No cloud, no API key. |
-
-## Install
-
-In Claude Code:
+Free, local-first plugins for Claude Code, by [DevQuasar](https://devquasar.com).
+Everything here runs on your machine. DQ = DevQuasar.
 
 ```
 /plugin marketplace add devquasar-ai/skills
@@ -17,15 +9,44 @@ In Claude Code:
 /plugin install dq-local-tts@devquasar
 ```
 
-Each plugin's README covers setup and commands. (DQ = DevQuasar; the prefix keeps the commands
-from colliding with other plugins.)
+## dq-session-db: your Claude Code history, kept and searchable
+
+![How dq-session-db works](docs/session-db.svg)
+
+Claude Code deletes your session transcripts after 30 days, and even before that, finding
+"the session where we decided X" means grepping JSON files. dq-session-db keeps every
+conversation in a local, searchable archive, with a compressed copy of each transcript, so you
+can:
+
+- **ask Claude about past work**: "what did we decide about the migration?", "where did I leave
+  off on the billing service?" It finds the session, reads the relevant part, and answers with
+  the source.
+- **resume any session**: it gives you the exact `cd … && claude --resume …` command, and can put
+  back a transcript Claude Code already deleted.
+- **see what a session did**: files written and commits made, plus an optional summary card
+  written by a model you choose (Haiku via your Claude login, or a local model).
+- **keep it tidy**: quick "find that session" lookups are left out of results, and a cleanup
+  command hides or removes them.
+
+Stdlib Python and SQLite: no packages, no cloud. [Details →](plugins/dq-session-db/)
+
+## dq-local-tts: hear Claude's replies
+
+![How dq-local-tts works](docs/local-tts.svg)
+
+Listen to Claude while you look at something else. Replies are spoken as they arrive, code
+blocks and noise skipped, one sentence ahead so there are no gaps. On a Mac it works right away
+with the built-in voices; Kokoro's natural voices are a switch away on any OS. No cloud, no API
+key. [Details →](plugins/dq-local-tts/)
 
 ## Other agents
 
-The skills follow the open [Agent Skills](https://agentskills.io) format (`SKILL.md`), which
-many agents read. The packaging here (hooks, slash commands, the marketplace) is Claude Code's.
-session-db's command-line tool runs anywhere Python does, but today it reads Claude Code's
-transcripts.
+The skills use the open [Agent Skills](https://agentskills.io) format (`SKILL.md`). The packaging
+here (hooks, slash commands, the marketplace) is Claude Code's. session-db's command-line tool runs
+anywhere Python does, but today it reads Claude Code's transcripts.
+
+**Using Claude Code with a local model?** Call skills directly (e.g.
+`/dq-session-db:sessions <question>`): smaller models often don't pick up skills on their own.
 
 ## More from DevQuasar
 

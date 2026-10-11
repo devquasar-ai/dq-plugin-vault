@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="430" viewBox="0 0 960 430" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif">
+  <title>How dq-session-db works</title>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#475569"/></marker>
+    <marker id="r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#b91c1c"/></marker>
+  </defs>
+  <rect width="960" height="430" rx="16" fill="#ffffff"/>
+  <text x="32" y="44" font-size="22" font-weight="700" fill="#0f172a">dq-session-db: your Claude Code history, kept and searchable</text>
+
+  <!-- source -->
+  <rect x="32" y="84" width="250" height="150" rx="12" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="52" y="114" font-size="15" font-weight="700" fill="#0f172a">Claude Code transcripts</text>
+  <text x="52" y="138" font-size="13" fill="#334155">~/.claude/projects/…/*.jsonl</text>
+  <text x="52" y="162" font-size="13" fill="#334155">one file per session,</text>
+  <text x="52" y="180" font-size="13" fill="#334155">one event per line</text>
+  <text x="52" y="214" font-size="13" font-weight="600" fill="#b91c1c">deleted after 30 days</text>
+  <line x1="157" y1="236" x2="157" y2="282" stroke="#b91c1c" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#r)"/>
+  <text x="157" y="304" font-size="13" fill="#b91c1c" text-anchor="middle">cleanupPeriodDays</text>
+
+  <!-- arrow to archive -->
+  <line x1="286" y1="159" x2="372" y2="159" stroke="#475569" stroke-width="2" marker-end="url(#a)"/>
+  <text x="329" y="146" font-size="12" fill="#475569" text-anchor="middle">hooks +</text>
+  <text x="329" y="180" font-size="12" fill="#475569" text-anchor="middle">every read</text>
+
+  <!-- archive -->
+  <rect x="376" y="70" width="290" height="250" rx="12" fill="#eef2ff" stroke="#6366f1" stroke-width="1.5"/>
+  <text x="396" y="100" font-size="15" font-weight="700" fill="#1e1b4b">Your archive (local, private)</text>
+  <text x="396" y="122" font-size="12" fill="#4338ca">~/.local/share/session-db</text>
+  <rect x="396" y="138" width="250" height="50" rx="8" fill="#ffffff" stroke="#c7d2fe"/>
+  <text x="410" y="160" font-size="13" font-weight="600" fill="#1e1b4b">Full-text index (SQLite FTS5)</text>
+  <text x="410" y="178" font-size="12" fill="#475569">every message, files, commits</text>
+  <rect x="396" y="196" width="250" height="50" rx="8" fill="#ffffff" stroke="#c7d2fe"/>
+  <text x="410" y="218" font-size="13" font-weight="600" fill="#1e1b4b">Compressed transcript copies</text>
+  <text x="410" y="236" font-size="12" fill="#475569">restore a deleted session, resume it</text>
+  <rect x="396" y="254" width="250" height="50" rx="8" fill="#ffffff" stroke="#c7d2fe" stroke-dasharray="5 4"/>
+  <text x="410" y="276" font-size="13" font-weight="600" fill="#1e1b4b">Summary cards (opt-in)</text>
+  <text x="410" y="294" font-size="12" fill="#475569">written by the model you choose</text>
+
+  <!-- arrow to use -->
+  <line x1="670" y1="195" x2="716" y2="195" stroke="#475569" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- use -->
+  <rect x="720" y="84" width="210" height="222" rx="12" fill="#ecfdf5" stroke="#10b981" stroke-width="1.5"/>
+  <text x="740" y="114" font-size="15" font-weight="700" fill="#064e3b">Just ask Claude</text>
+  <text x="740" y="142" font-size="13" fill="#065f46">“what did we decide</text>
+  <text x="740" y="160" font-size="13" fill="#065f46">  about the migration?”</text>
+  <text x="740" y="190" font-size="13" fill="#065f46">• search &amp; read around</text>
+  <text x="740" y="212" font-size="13" fill="#065f46">• summary card</text>
+  <text x="740" y="234" font-size="13" fill="#065f46">• exact resume command</text>
+  <text x="740" y="256" font-size="13" fill="#065f46">• restore &amp; resume</text>
+  <text x="740" y="278" font-size="13" fill="#065f46">• tidy up quick lookups</text>
+
+  <text x="32" y="384" font-size="13" fill="#475569">Stdlib Python + SQLite. No packages, no cloud: nothing leaves your machine unless you turn on cards</text>
+  <text x="32" y="404" font-size="13" fill="#475569">and choose a model for them (Haiku via your Claude login, or any OpenAI-compatible endpoint such as Ollama).</text>
+</svg>
