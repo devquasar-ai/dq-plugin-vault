@@ -277,3 +277,4 @@ server to ask.
 ---
 
 Free and open source, by [DevQuasar](https://devquasar.com) (Csaba Kecskemeti). MIT license.
+If it saves you time, you can support the work: <a href='https://ko-fi.com/L4L416YX7C' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi6.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>

@@ -32,4 +32,11 @@ Then install the plugins you want from `/plugin`, or with the install line on ea
 - 🤗 [huggingface.co/DevQuasar](https://huggingface.co/DevQuasar): 900+ quantized open-weight models
 - 📝 [devquasar.com](https://devquasar.com): hands-on posts on local AI, hardware and models
 
+## Support
+
+These plugins are free, and so are the 900+ models on Hugging Face. Building and testing them
+takes real hardware and time. If they save you some, you can support the work here:
+
+<a href='https://ko-fi.com/L4L416YX7C' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi6.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+
 MIT license. Issues and pull requests welcome.
