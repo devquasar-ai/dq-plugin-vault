@@ -381,16 +381,16 @@ def render(db, sid):
 
 
 SETUP_HELP = """Session cards are OFF. Search, show and resume work without them.
-Turn them on with one of:
+Cards are short summaries of each session, written by a model you choose. Turn them on with:
 
-  sessiondb.py cards-setup claude --model haiku
-      headless `claude -p` on your own Claude Code login; uses your plan's usage
+  /dq-session-db:cards haiku
+      uses your own Claude Code login (counts against your plan)
 
-  sessiondb.py cards-setup openai --base-url URL --model NAME [--key-env VAR] [--no-thinking]
-      any OpenAI-compatible endpoint: local vLLM/Ollama, OpenAI, OpenRouter, ...
-      e.g. --base-url http://localhost:11434/v1 --model qwen3:8b   (Ollama)
+  /dq-session-db:cards local URL MODEL [KEY_ENV]
+      any OpenAI-compatible endpoint, e.g. Ollama:
+      /dq-session-db:cards local http://localhost:11434/v1 qwen3:8b
 
-  sessiondb.py cards-setup off"""
+Then /dq-session-db:cards test, and /dq-session-db:cards on for automatic cards."""
 
 
 def config_status(db_path, cfg):

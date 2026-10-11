@@ -92,7 +92,7 @@ the slow case and announces itself first:
 
 ```
 FIRST-TIME SETUP: no local image found.
-Pulling ghcr.io/csabakecskemeti/kokoro-tts-server:latest -- this is a multi-GB
+Pulling ghcr.io/devquasar-ai/kokoro-tts-server:latest -- this is a multi-GB
 download and will take several minutes. It happens once; later starts are seconds.
 ```
 
@@ -109,7 +109,7 @@ forces that path deliberately.
 The server lives at [`server/`](server/) — Dockerfile, compose file, FastAPI
 app and its tests. It is the source of truth for the image: CI in this
 repository builds it and publishes to
-`ghcr.io/csabakecskemeti/kokoro-tts-server`. It has no dependency on the plugin
+`ghcr.io/devquasar-ai/kokoro-tts-server`. It has no dependency on the plugin
 and can be run on its own with `docker compose up -d`.
 
 The plugin checks `/health` for `service` and `api_version`, so it can tell

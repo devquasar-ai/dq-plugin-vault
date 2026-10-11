@@ -70,13 +70,16 @@ grown, and a card is only ever extended with new messages, never re-read from sc
 
 1. For "where are we on X" questions, start with `sessions -p X --status` and `card`. For
    "what did we decide / say about Y", start with `search`.
-2. Search. If the first query misses, try different words: the archive holds what was actually
+2. In `--by-session` results, sessions tagged `[lookup: only searched for this]` are earlier
+   searches, not the work itself. They rank last; prefer the untagged sessions, even when a
+   lookup's title matches the question more literally.
+3. Search. If the first query misses, try different words: the archive holds what was actually
    said, which is often not the word the user uses now.
-3. Read around the best hits with `show --around` before concluding. A snippet is not enough
+4. Read around the best hits with `show --around` before concluding. A snippet is not enough
    to report a decision, and a card item is a pointer: check its `#id` before quoting it.
-4. Answer with the source: session name and id, date, and what was said. Quote the user's own
+5. Answer with the source: session name and id, date, and what was said. Quote the user's own
    words when they matter.
-5. If the user wants to continue that work, run `resume <session>` and give its output exactly.
+6. If the user wants to continue that work, run `resume <session>` and give its output exactly.
    Never write a resume command yourself: `claude --resume` needs the full session id (short
    ids from listings don't work) and must run in the folder the session started in. `card` and
    `show` also print the exact line. If the transcript was deleted (`stats` counts

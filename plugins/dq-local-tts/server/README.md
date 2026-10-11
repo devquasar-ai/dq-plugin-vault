@@ -109,7 +109,7 @@ CI runs these before publishing the image.
 
 ## Published image
 
-`ghcr.io/csabakecskemeti/kokoro-tts-server:latest`, built for
+`ghcr.io/devquasar-ai/kokoro-tts-server:latest`, built for
 `linux/amd64` and `linux/arm64` — arm64 so Apple silicon runs it natively
 rather than emulated. The plugin pulls this, and falls back to building this
 directory if the pull fails.

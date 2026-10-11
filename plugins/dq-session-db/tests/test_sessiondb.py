@@ -214,6 +214,19 @@ class SessionDbTest(unittest.TestCase):
         self.assertNotIn(work, out)
         self.assertIn("Nothing changed", out)
 
+    def test_lookup_sessions_rank_after_real_work(self):
+        lookup = "11111111-0000-0000-0000-000000000000"
+        call = {"type": "assistant", "uuid": "x1", "sessionId": SID, "cwd": "/tmp/proj",
+                "timestamp": "2026-10-01T10:00:00Z", "message": {"content": [
+                    {"type": "tool_use", "name": "Skill", "input": {"skill": "dq-session-db:sessions"}}]}}
+        self.add_session(lookup, *[event("user", i, f"find the heron heron project {i}") for i in range(4)],
+                         json.dumps(call) + "\n")
+        self.write(event("user", 1, "design the heron pipeline"))
+        out = self.run_cli("search", "heron", "--by-session")
+        lines = [l for l in out.splitlines() if l.strip()]
+        self.assertTrue(lines[0].startswith(SID), out)
+        self.assertIn("[lookup", lines[1])
+
     def test_hide_and_unhide(self):
         self.no_idle_wait()
         self.write(event("user", 1, "hidden marmot"))

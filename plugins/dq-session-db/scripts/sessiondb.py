@@ -591,10 +591,14 @@ def cmd_search(db, args):
         # A session that keeps coming back to the topic is the one about it; break ties
         # by the best single match (insertion order follows relevance).
         order = {sid: i for i, sid in enumerate(seen)}
-        ranked = sorted(seen.items(), key=lambda kv: (-len(kv[1]), order[kv[0]]))
+        lookup = {sid: lookup_only(db, sid) for sid in seen}
+        # A session that only searched for the topic is not about it: rank real work first.
+        ranked = sorted(seen.items(), key=lambda kv: (lookup[kv[0]], -len(kv[1]), order[kv[0]]))
         for sid, hits in ranked[: args.limit]:
             r = hits[0]
-            print(f"{sid}  {label(r)}  [{r['project'] or '?'}]  {len(hits)} hit(s), latest {day(max(h['ts'] or '' for h in hits))}")
+            tag = "  [lookup: only searched for this]" if lookup[sid] else ""
+            print(f"{sid}  {label(r)}  [{r['project'] or '?'}]  {len(hits)} hit(s), "
+                  f"latest {day(max(h['ts'] or '' for h in hits))}{tag}")
         return
     for r in rows:
         snip = " ".join(r["snip"].split())
@@ -624,6 +628,12 @@ def search_cards(db, q, args):
         print(f"    status: {c.get('status', '')}")
         print(f"    match:  {' '.join(r['snip'].split())}")
     print("\nFull card: sessiondb.py card <session>")
+
+
+def lookup_only(db, sid):
+    """True for a session that used session-db and produced nothing (no files, no commits)."""
+    kinds = {r[0] for r in db.execute("SELECT DISTINCT kind FROM touches WHERE session_id=?", (sid,))}
+    return "lookup" in kinds and not kinds & {"file", "git"}
 
 
 def visibility(where, params, args, alias):

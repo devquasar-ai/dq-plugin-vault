@@ -5,7 +5,7 @@
 # serving, container stopped, image present but not started, or nothing local
 # at all (the slow first-run case, which is announced before it begins).
 set -e
-REMOTE=${KOKORO_TTS_IMAGE:-ghcr.io/csabakecskemeti/kokoro-tts-server:latest}
+REMOTE=${KOKORO_TTS_IMAGE:-ghcr.io/devquasar-ai/kokoro-tts-server:latest}
 LOCAL=${KOKORO_TTS_LOCAL_IMAGE:-kokoro-tts-server:latest}
 NAME=${KOKORO_TTS_CONTAINER:-kokoro-tts}
 # The build context ships with the plugin, so a failed pull is recoverable
