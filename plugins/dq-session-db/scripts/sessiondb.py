@@ -546,7 +546,9 @@ def cmd_search(db, args):
         ORDER BY {'m.ts DESC' if args.recent else 'bm25(messages_fts)'}
         LIMIT ?"""
     try:
-        rows = db.execute(sql, params + [args.limit]).fetchall()
+        # Grouping by session needs many more message hits than sessions shown, or one chatty
+        # session can fill the whole limit and push better-matching sessions off the list.
+        rows = db.execute(sql, params + [args.limit * 50 if args.by_session else args.limit]).fetchall()
     except sqlite3.OperationalError as e:
         sys.exit(f"Bad query {q!r}: {e}. Use --raw for FTS5 syntax, or plain words.")
     if not rows:
@@ -556,9 +558,13 @@ def cmd_search(db, args):
         seen = {}
         for r in rows:
             seen.setdefault(r["session_id"], []).append(r)
-        for sid, hits in seen.items():
+        # A session that keeps coming back to the topic is the one about it; break ties
+        # by the best single match (insertion order follows relevance).
+        order = {sid: i for i, sid in enumerate(seen)}
+        ranked = sorted(seen.items(), key=lambda kv: (-len(kv[1]), order[kv[0]]))
+        for sid, hits in ranked[: args.limit]:
             r = hits[0]
-            print(f"{sid[:8]}  {label(r)}  [{r['project'] or '?'}]  {len(hits)} hit(s), latest {day(max(h['ts'] or '' for h in hits))}")
+            print(f"{sid}  {label(r)}  [{r['project'] or '?'}]  {len(hits)} hit(s), latest {day(max(h['ts'] or '' for h in hits))}")
         return
     for r in rows:
         snip = " ".join(r["snip"].split())

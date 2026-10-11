@@ -181,6 +181,8 @@ Database: `~/.local/share/session-db/sessions.db` (override the folder with `SES
 - **Retiring sessions.** Suggest, never delete: mark old sessions dormant so they rank lower; an
   exclude list for folders that should not be indexed; a manual `forget <session>`.
 - **Multiple machines.** Rows already record their `host`, so archives can be merged later.
+- **Leave out the current session** from search results by default (it otherwise matches its
+  own question).
 - **Local-only sessions.** Flag a session or project so its content is only shown to, or
   summarized by, a local model.
 

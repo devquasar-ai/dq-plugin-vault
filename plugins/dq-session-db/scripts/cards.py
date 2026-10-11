@@ -373,6 +373,10 @@ def render(db, sid):
                    + (f"\n  … +{len(files) - 25} more" if len(files) > 25 else ""))
     if gits:
         out.append(f"\nGit ({len(gits)}):\n  " + "\n  ".join(g for g in gits[:10]))
+    cwd = s["cwd"]
+    home = os.path.expanduser("~")
+    cd = f"cd {cwd.replace(home, '~', 1)} && " if cwd else ""
+    out.append(f"\nResume (copy exactly; needs the full id): {cd}claude --resume {sid}")
     return "\n".join(out)
 
 

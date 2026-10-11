@@ -63,9 +63,11 @@ grown, and a card is only ever extended with new messages, never re-read from sc
    to report a decision, and a card item is a pointer: check its `#id` before quoting it.
 4. Answer with the source: session name and id, date, and what was said. Quote the user's own
    words when they matter.
-5. If the user wants to continue that work, give them the `resume` command. Resuming only works
-   from the directory the session started in, which is why it includes the `cd`. If the
-   transcript was deleted (`stats` counts these), run `restore <session>` first.
+5. If the user wants to continue that work, run `resume <session>` and give its output exactly.
+   Never write a resume command yourself: `claude --resume` needs the full session id (short
+   ids from listings don't work) and must run in the folder the session started in. `card` and
+   `show` also print the exact line. If the transcript was deleted (`stats` counts
+   these), run `restore <session>` first.
 
 What is indexed: user and assistant text of main-thread messages, plus compaction summaries;
 from tool calls, only the files written and git commits/pushes. Tool output and subagent

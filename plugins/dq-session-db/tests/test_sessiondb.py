@@ -119,6 +119,7 @@ class SessionDbTest(unittest.TestCase):
         out = self.run_cli("card", SID[:8])
         self.assertIn("/tmp/proj/a.py", out)
         self.assertIn("commit, push — Add the thing", out)
+        self.assertIn(f"cd /tmp/proj && claude --resume {SID}", out)
 
     def test_upgrade_backs_up_and_newer_schema_is_refused(self):
         import sqlite3
