@@ -1,5 +1,5 @@
 ---
-description: Control local text-to-speech: macOS voices or Kokoro (on/off/voice/speed/backend/server/status)
+description: "Control local text-to-speech: macOS voices or Kokoro (on/off/voice/speed/backend/server/status)"
 argument-hint: "[on|off|stop|status|voice NAME|speed N|backend macos|kokoro|kokoro-server|server up|down|build|status|restart|log]"
 allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/tts-ctl.sh:*)
 ---

@@ -1,7 +1,7 @@
 {
   "name": "dq-local-tts",
   "description": "Speaks Claude Code's replies aloud, fully on your machine: macOS voices out of the box, or Kokoro. No cloud, no API key.",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "author": {
     "name": "DevQuasar",
     "url": "https://devquasar.com"
