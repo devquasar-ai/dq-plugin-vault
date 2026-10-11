@@ -43,10 +43,46 @@ COMMAND_TAG = re.compile(r"</?(command-name|command-message|command-args)>")
 
 # --------------------------------------------------------------------------- db
 
+def stored_schema(path):
+    """Schema version of an existing database, or None for a new or empty one."""
+    probe = sqlite3.connect(path, timeout=30)
+    try:
+        row = probe.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()
+        if row:
+            return int(row[0])
+        has_tables = probe.execute("SELECT 1 FROM sqlite_master LIMIT 1").fetchone()
+        return 0 if has_tables else None
+    except sqlite3.OperationalError:
+        return None
+    finally:
+        probe.close()
+
+
+def guard_and_backup(path):
+    """Refuse a database written by a newer session-db; back up one we are about to upgrade."""
+    version = stored_schema(path)
+    if version is None or version == SCHEMA_VERSION:
+        return
+    if version > SCHEMA_VERSION:
+        sys.exit(f"{path} was written by a newer session-db (schema v{version}; this code knows "
+                 f"v{SCHEMA_VERSION}). Update the plugin; the database is left untouched.")
+    backup = f"{path}.pre-v{SCHEMA_VERSION}.bak"
+    if not os.path.exists(backup):
+        src, dst = sqlite3.connect(path, timeout=30), sqlite3.connect(backup)
+        try:
+            src.backup(dst)  # consistent copy, WAL included
+        finally:
+            src.close()
+            dst.close()
+        os.chmod(backup, 0o600)
+
+
 def connect(path):
     d = os.path.dirname(path)
     os.makedirs(d, mode=0o700, exist_ok=True)
     new = not os.path.exists(path)
+    if not new:
+        guard_and_backup(path)
     db = sqlite3.connect(path, timeout=30)
     if new:
         os.chmod(path, 0o600)  # the archive holds whatever was said, secrets included
@@ -207,7 +243,10 @@ def archive_file(db, db_path, path, upto):
         done = 0  # rewritten transcript or missing copy: start the copy over
     if done == upto:
         return
+    root = os.path.join(os.path.dirname(db_path), "transcripts")
     os.makedirs(os.path.dirname(dest), mode=0o700, exist_ok=True)
+    os.chmod(root, 0o700)  # makedirs' mode is filtered by the umask; enforce it
+    os.chmod(os.path.dirname(dest), 0o700)
     with open(path, "rb") as f:
         f.seek(done)
         chunk = f.read(upto - done)

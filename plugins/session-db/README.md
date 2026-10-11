@@ -113,6 +113,15 @@ to about 400k tokens in total, the largest single session about 91k, and a busy 
 5–40k. With `claude -p`, Claude Code's own system prompt is replaced and tools are disabled, so
 the overhead per call is a few hundred tokens.
 
+## Upgrading
+
+Your data lives in `~/.claude/session-db/`, outside the plugin, so uninstalling or updating the
+plugin never touches it. When a new version changes the database format, it upgrades it in
+place on first use, after saving a backup next to it (`sessions.db.pre-vN.bak`). An older version
+refuses to open a database written by a newer one, instead of damaging it. Run only one copy
+of session-db at a time: two installs from different marketplaces would write to the same
+archive.
+
 ## Privacy
 
 - Everything stays on your machine. The database and transcript copies are created readable
@@ -156,6 +165,10 @@ Database: `~/.claude/session-db/sessions.db` (override with `SESSION_DB` or `--d
   layer (another disk, a NAS, a private remote) so history survives the machine too.
 - **Search by meaning** (vector search), opt-in, next to the keyword index, for when the words
   you use now differ from the words used then. Embeddings from an endpoint you choose.
+- **Rebuild from the archive.** Recreate the whole database from the compressed transcripts
+  (only cards would need the model again): the safety net for any future format change.
+- **Export / import** in a version-neutral format (sessions, messages, cards as JSON lines),
+  for moving between machines or across major versions.
 - **Retiring sessions.** Suggest, never delete: mark old sessions dormant so they rank lower; an
   exclude list for folders that should not be indexed; a manual `forget <session>`.
 - **Multiple machines.** Rows already record their `host`, so archives can be merged later.

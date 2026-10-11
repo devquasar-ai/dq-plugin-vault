@@ -120,6 +120,30 @@ class SessionDbTest(unittest.TestCase):
         self.assertIn("/tmp/proj/a.py", out)
         self.assertIn("commit, push — Add the thing", out)
 
+    def test_upgrade_backs_up_and_newer_schema_is_refused(self):
+        import sqlite3
+        self.write(event("user", 1, "hello"))
+        self.run_cli("index", "-q")
+        con = sqlite3.connect(self.db)
+        con.execute("UPDATE meta SET value='2' WHERE key='schema_version'")
+        con.commit()
+        con.close()
+        self.run_cli("index", "-q")  # upgrades v2 -> current
+        backup = f"{self.db}.pre-v{sessiondb.SCHEMA_VERSION}.bak"
+        self.assertTrue(os.path.exists(backup))
+        self.assertEqual(os.stat(backup).st_mode & 0o777, 0o600)
+        con = sqlite3.connect(self.db)
+        con.execute("UPDATE meta SET value='99' WHERE key='schema_version'")
+        con.commit()
+        con.close()
+        r = subprocess.run([sys.executable, SCRIPT, "search", "hello"], env=self.env,
+                           capture_output=True, text=True)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("newer session-db", r.stderr)
+        con = sqlite3.connect(self.db)
+        self.assertEqual(con.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()[0], "99")
+        con.close()
+
     def test_cards_off_by_default(self):
         self.write(event("user", 1, "hello"))
         self.assertIn("Session cards are OFF", self.run_cli("cards-ctl", "status"))
