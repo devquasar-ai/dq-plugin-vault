@@ -32,6 +32,22 @@ dq-local-tts speaking through the macOS voices or a local Kokoro model, the whol
 stays on your machine: you talk, Claude works, Claude talks back. Nothing to build for the
 listening side: it was there all along.
 
+## Built on a Mac, open to more
+
+I work mostly on macOS, and it shows: the macOS voices are the default, and Dictation does the
+listening side for free. On Linux the plugin works too, using the Kokoro server in Docker, but
+there is no built-in voice and no Dictation, so it takes more setup.
+
+**Contributions are welcome**, especially:
+- **Linux speech-to-text**: a recommended, tested way to dictate to Claude Code on Linux (for
+  example with a local Whisper model), so the voice loop works there too
+- **Linux voices without Docker**: a lightweight local backend for desktops that don't want a
+  container
+- **Other operating systems**, Windows included: built-in voices and voice typing exist there
+  too, they just need someone to wire them up and test them
+
+Issues and pull requests: [devquasar-ai/skills](https://github.com/devquasar-ai/skills).
+
 ## Install
 
 ```
@@ -148,25 +164,7 @@ shows the plugin version and flags a daemon started from another version as
 
 ## How it works
 
-Three stages, with a clear split of labour:
-
-```
- ┌─ this machine ──────────────────────────────────────────────┐
- │                                                             │
- │  PreToolUse ─┐   hook worker           daemon               │
- │  Stop ───────┴─► · new text this turn ─► · split sentences  │
- │  (detached,      · dedupe               · synth one ahead ──┼──► backend
- │   ~0.3 s)        · filter code/tables   · play the audio ◄──┼─── WAV bytes
- │                                                             │
- └─────────────────────────────────────────────────────────────┘
-   backend = embedded (Kokoro in the daemon)
-           | http     (kokoro-tts-server container on :42821)
-           | say      (macOS `say`)
-```
-
-**The hooks decide what to say. The daemon splits and plays. The backend only
-synthesizes.** Because a backend just turns text into WAV bytes, swapping it
-changes nothing about what is spoken or how it is played.
+![How a reply becomes speech](../../docs/local-tts-pipeline.svg)
 
 Playback can never move into the container: on macOS Docker runs inside a Linux
 VM with no CoreAudio access and no `/dev/snd`, so a container physically cannot
