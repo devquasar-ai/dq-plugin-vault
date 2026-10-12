@@ -28,8 +28,9 @@ works in any app, including the terminal where Claude Code runs:
    keyboard and settings), speak your prompt, and press Return.
 
 On Apple silicon, Dictation runs on the device for supported languages. Together with
-dq-local-tts speaking through the macOS voices or a local Kokoro model, the whole conversation
-stays on your machine: you talk, Claude works, Claude talks back. Nothing to build for the
+dq-local-tts speaking through the macOS voices or a local Kokoro model, the voice side stays on
+your machine: you talk, Claude works, Claude talks back. (What you say still goes to whichever
+model you use; with a local model, nothing leaves at all.) Nothing to build for the
 listening side: it was there all along.
 
 ## Built on a Mac, open to more

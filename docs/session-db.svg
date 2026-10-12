@@ -49,5 +49,5 @@
   <text x="740" y="278" font-size="13" fill="#065f46">• tidy up quick lookups</text>
 
   <text x="32" y="384" font-size="13" fill="#475569">Plain files you control: SQLite + gzip. No service, no account, no lock-in. Works with local models;</text>
-  <text x="32" y="404" font-size="13" fill="#475569">nothing leaves your machine unless you choose a cloud model for the optional summary cards.</text>
+  <text x="32" y="404" font-size="13" fill="#475569">session-db itself sends nothing anywhere, unless you pick a cloud model for the summary cards.</text>
 </svg>

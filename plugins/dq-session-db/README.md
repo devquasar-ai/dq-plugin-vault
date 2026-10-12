@@ -178,7 +178,7 @@ archive.
 
 ## Privacy
 
-- Everything stays on your machine. The database and transcript copies are created readable
+- The archive stays on your machine. The database and transcript copies are created readable
   only by you.
 - Nothing is sent anywhere unless you turn cards on, and then only to the model you chose.
 - Nothing is redacted: a password or key that appeared in a session is in the archive too.
